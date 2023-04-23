@@ -29,6 +29,18 @@ class ConfigurationManager:
         else:
             self.__init_config()
 
+    def set_configuration_for_process(self, process: str) -> None:
+        """Sets configuration when foreground executable changes
+        :param process: the name of the process that is now in the foreground
+        """
+        name = process.split(".")[0]
+        for index, config in enumerate(self.configurations):
+            if config.name == name:
+                if self.configuration_index != index:
+                    self.configuration_index = index
+                    self.__show_configuration_popup()
+                    break
+
     def read_configuration(self) -> None:
         """Reads the configuration file and updates the configurations list
         """
@@ -107,6 +119,7 @@ class ConfigurationManager:
     def __show_configuration_popup(self) -> None:
         """Shows a psg popup with the current configuration
         """
+        pass
         Psg.popup_auto_close(
             f"Configuration changed to {self.configurations[self.configuration_index].name}",
             keep_on_top=True, relative_location=(0, -800), no_titlebar=True,

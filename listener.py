@@ -1,5 +1,8 @@
+import os
+from threading import Thread
+
 import keyboard
-from typing import Callable, Any
+from typing import Callable
 import sys
 import time
 from watchdog.observers import Observer
@@ -8,6 +11,10 @@ from enum import Enum
 from configuration_manager import ConfigurationManager
 from constants import ABBREVIATION, MACRO_KEYBOARD_FILE_TYPE, INTERNAL_FUNCTION, \
     NEXT, PREV
+from windows_event_handler import WindowsEventHandler
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class FunctionType(Enum):
@@ -47,6 +54,9 @@ class MacroKeyboard:
         self.recording = False
         self.configuration_manager = ConfigurationManager()
         self.update_hotkeys(init=True)
+        self.__init_env()
+        if os.getenv("USE_FOREGROUND_WINDOW_DETECTION"):
+            Thread(target=lambda: WindowsEventHandler(self.configuration_manager)).start()
         self.__observe()
 
     def update_hotkeys(self, init=False) -> None:
@@ -84,6 +94,18 @@ class MacroKeyboard:
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
+
+    @staticmethod
+    def __init_env() -> None:
+        """Initializes the .env file if it does not exist
+        """
+        if os.path.isfile(".env"):
+            return
+        with open(".env", 'w') as env_file:
+            env_file.writelines([
+                'USE_FOREGROUND_WINDOW_DETECTION = False\n',
+                'EXE_LIST = ["chrome.exe", "explorer.exe"]\n'
+            ])
 
 
 class KeyboardEventHandler(FileSystemEventHandler):

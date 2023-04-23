@@ -71,17 +71,19 @@ class GUI:
         """Handles the keyboard event for recording macros
         :return: string representation of the pressed buttons
         """
-        pressed = 0
+        pressed = []
         key_list = []
         self.recording = True
         while True:
             event = keyboard.read_event(suppress=True)
+            print(event.name)
             if event.event_type == "down":
-                key_list.append(event.name)
-                pressed = pressed + 1
+                if event.name not in pressed:
+                    key_list.append(event.name)
+                    pressed.append(event.name)
             elif event.event_type == "up":
-                pressed = pressed - 1
-            if pressed == 0:
+                pressed.remove(event.name)
+            if not pressed:
                 arg = '+'.join(key_list)
                 return arg
 
