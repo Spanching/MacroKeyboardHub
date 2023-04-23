@@ -1,44 +1,45 @@
-import PySimpleGUI as sg
+import PySimpleGUI as Psg
 import keyboard
-import os
-from pathlib import Path
+import re
+
+from configuration_manager import ConfigurationManager
+from constants import PREFIX_ABBREVIATION, PREFIX_BUTTON, \
+    PREFIX_INTERNAL_FUNCTION, CONFIG_POSTFIX, PREFIX_RESET, PREFIX_ADD, PREFIX_DELETE, PREFIX_PREV, PREFIX_NEXT, \
+    PREFIX_CANCEL, PREFIX_EDIT
+
 
 class GUI:
     def __init__(self) -> None:
-        sg.theme("Dark Grey 15")
-        self.key_dict = {}
+        self.recording = False
+        Psg.theme("Dark Grey 15")
+        self.configuration_manager = ConfigurationManager()
 
-        self.files = list(filter(lambda f: f.endswith(".mkc"), os.listdir()))
-        self.file_index = 0
-
-        self.read_config()
         button_lists = [[], [], [], []]
-        for index, (key, value) in enumerate(self.key_dict.items()):
-            button_lists[index // 4].append(sg.Button(value, key = f"BUTTON_{key}", size=(12, 5)))
+        for index, (key, value) in enumerate(self.configuration_manager.get_configuration().keys.items()):
+            button_lists[index // 4].append(Psg.Button(self.get_display_arg(value), key=f"{PREFIX_BUTTON}_{key}", size=(12, 5)))
         layout = [
-            [sg.Button("<", key="PREV"), sg.Text(self.files[self.file_index], key="-TEXT-CONFIG-", expand_x=True, justification="center"), sg.Button(">", key="NEXT"), sg.Button("+", key="ADD_CONFIG"), sg.Button("Delete", key="DELETE_CONFIG")],
+            [Psg.Button("<", key="PREV_CONFIG"),
+             Psg.Text(self.configuration_manager.get_configuration().name, key="-TEXT-CONFIG-", expand_x=True, justification="center"),
+             Psg.Button(">", key="NEXT_CONFIG"), Psg.Button("+", key="ADD_CONFIG"),
+             Psg.Button("Delete", key="DELETE_CONFIG"),
+             Psg.Button("Reset", key="RESET_CONFIG")],
             *button_lists
         ]
-        self.window = sg.Window("Macro Keyboard Hub", layout)
+        self.window = Psg.Window("Macro Keyboard Hub", layout)
 
-    def read_config(self):
-        self.key_dict.clear()
-        with open(self.files[self.file_index], "r") as file:
-            lines = file.readlines()
-            for line in lines:
-                key, arg = line.strip().split(',')
-                self.key_dict[key] = arg
+    def update_config_name(self):
+        self.window["-TEXT-CONFIG-"](self.configuration_manager.get_configuration().name)
 
     def update_buttons(self):
-        for key, arg in self.key_dict.items():
-            self.window[f"BUTTON_{key}"](arg)
+        for key, arg in self.configuration_manager.get_configuration().keys.items():
+            self.window[f"{PREFIX_BUTTON}_{key}"](self.get_display_arg(arg))
 
     def record(self) -> str:
         pressed = 0
-        key_list=[]
+        key_list = []
         self.recording = True
         while True:
-            event = keyboard.read_event()
+            event = keyboard.read_event(suppress=True)
             if event.event_type == "down":
                 key_list.append(event.name)
                 pressed = pressed + 1
@@ -47,72 +48,97 @@ class GUI:
             if pressed == 0:
                 arg = '+'.join(key_list)
                 return arg
-            
+
     def record_macro(self, window, key):
-        input = self.record()
-        window[f"BUTTON_{key}"](input)
-        self.key_dict[key] = input
-    
-    def save_config(self):
-        lines = list(map(lambda pair: f"{pair[0]},{pair[1]}\n" ,self.key_dict.items()))
-        with open(self.files[self.file_index], "w") as file:
-            file.writelines(lines)
+        recording = self.record()
+        window[f"{PREFIX_BUTTON}_{key}"](self.get_display_arg(recording))
+        self.configuration_manager.update_key(key, recording)
+
+    @staticmethod
+    def get_display_arg(arg: str) -> str:
+        if arg.startswith(PREFIX_ABBREVIATION):
+            _, name, value = re.split('_|:', arg)
+            return f"Abbr: {name}"
+        elif arg.startswith(PREFIX_INTERNAL_FUNCTION):
+            _, name = arg.split("_")
+            return name
+        return arg.replace("+", " + ")
 
     def show_gui(self):
         # Create an event loop
         while True:
             event, _ = self.window.read()
             if event is not None:
-                if event == "ADD_CONFIG":
-                    config_name = sg.popup_get_text("Input the name of the new configuration.")
-                    if config_name is not None:
-                        Path(f'{config_name}.mkc').touch()
-                        lines = ['f13,f13\n',
-                                'f14,f14\n',
-                                'f15,f15\n',
-                                'f16,f16\n',
-                                'f17,f17\n',
-                                'f18,f18\n',
-                                'f19,f19\n',
-                                'f20,f20\n',
-                                'strg+f13,strg+f13\n',
-                                'strg+f14,strg+f14\n',
-                                'strg+f15,strg+f15\n',
-                                'strg+f16,strg+f16\n',
-                                'strg+f17,strg+f17\n',
-                                'strg+f18,strg+f18\n',
-                                'strg+f19,strg+f19\n',
-                                'strg+f20,strg+f20\n',
-                            ]
-                        with open(f'{config_name}.mkc', "w") as file: 
-                                    file.writelines(lines)
-                        self.files = list(filter(lambda f: f.endswith(".mkc"), os.listdir()))
-                elif event == "DELETE_CONFIG":
-                    if len(self.files) > 1:
-                        os.remove(self.files[self.file_index])
-                        self.files = list(filter(lambda f: f.endswith(".mkc"), os.listdir()))
-                        self.file_index = self.file_index % len(self.files)
-                        self.window["-TEXT-CONFIG-"](self.files[self.file_index])
-                        self.read_config()
+                if event.endswith(CONFIG_POSTFIX):
+                    if event.startswith(PREFIX_RESET):
+                        self.configuration_manager.reset_current_config()
                         self.update_buttons()
-                elif event == "PREV":
-                    self.file_index = (self.file_index - 1) % len(self.files)
-                    self.window["-TEXT-CONFIG-"](self.files[self.file_index])
-                    self.read_config()
-                    self.update_buttons()
-                elif event == "NEXT":
-                    self.file_index = (self.file_index + 1) % len(self.files)
-                    self.window["-TEXT-CONFIG-"](self.files[self.file_index])
-                    self.read_config()
-                    self.update_buttons()
-                elif event.startswith("BUTTON_"):
+                    elif event.startswith(PREFIX_ADD):
+                        config_name = Psg.popup_get_text("Input the name of the new configuration.")
+                        if config_name is not None:
+                            self.configuration_manager.add_new_configuration(config_name)
+                            self.update_config_name()
+                            self.update_buttons()
+                    elif event.startswith(PREFIX_DELETE):
+                        self.configuration_manager.delete_current_configuration()
+                        self.update_config_name()
+                        self.update_buttons()
+                    elif event.startswith(PREFIX_PREV):
+                        self.configuration_manager.previous_configuration(popup=False)
+                        self.update_config_name()
+                        self.update_buttons()
+                    elif event.startswith(PREFIX_NEXT):
+                        self.configuration_manager.next_configuration(popup=False)
+                        self.update_config_name()
+                        self.update_buttons()
+                elif event.startswith(PREFIX_BUTTON):
                     key = event.split("_")[-1]
-                    self.record_macro(self.window, key)
-                    self.save_config()
-            if event == sg.WIN_CLOSED:
+                    popup_layout = [
+                        [Psg.Text("Change Button Function:")],
+                        [Psg.Text(self.configuration_manager.get_key_function(key), expand_x=True),
+                         Psg.Button("Edit", key=f"{PREFIX_INTERNAL_FUNCTION}_{PREFIX_EDIT}", size=(6, 1))],
+                        [Psg.Button("Abbreviation", key=f"{PREFIX_INTERNAL_FUNCTION}_{PREFIX_ABBREVIATION}",
+                                    expand_x=True)],
+                        [Psg.Button("Prev", key=f"{PREFIX_INTERNAL_FUNCTION}_{PREFIX_PREV}", expand_x=True),
+                         Psg.Button("Next", key=f"{PREFIX_INTERNAL_FUNCTION}_{PREFIX_NEXT}", expand_x=True)],
+                        [Psg.Button("Cancel", key=f"{PREFIX_INTERNAL_FUNCTION}_{PREFIX_CANCEL}", expand_x=True)]
+                    ]
+                    popup_window = Psg.Window("Change Button Function", layout=popup_layout, modal=True, finalize=True,
+                                              grab_anywhere=True, keep_on_top=True, no_titlebar=True)
+                    while True:
+                        popup_event, _ = popup_window.read()
+                        if popup_event.startswith(PREFIX_INTERNAL_FUNCTION):
+                            if popup_event.endswith(PREFIX_PREV) or popup_event.endswith(PREFIX_NEXT):
+                                self.configuration_manager.update_key(key, popup_event)
+                                popup_window.close()
+                                self.update_buttons()
+                                break
+                            elif popup_event.endswith(PREFIX_ABBREVIATION):
+                                name = Psg.popup_get_text("Add Abbreviation Name", keep_on_top=True)
+                                abbreviation = Psg.popup_get_text("Add Abbreviation", keep_on_top=True)
+                                if name is not None and name != '' and abbreviation is not None \
+                                        and abbreviation != '':
+                                    self.configuration_manager.update_key(key, f"{PREFIX_ABBREVIATION}_{name}:{abbreviation}")
+                                    popup_window.close()
+                                    self.update_buttons()
+                                else:
+                                    popup_window.close()
+                                break
+                            elif popup_event.endswith(PREFIX_CANCEL):
+                                popup_window.close()
+                                break
+                            elif popup_event.endswith(PREFIX_EDIT):
+                                self.record_macro(self.window, key)
+                                popup_window.close()
+                                self.update_buttons()
+                                break
+                        else:
+                            popup_window.close()
+                            break
+            if event == Psg.WIN_CLOSED:
                 break
 
         self.window.close()
 
-GUI().show_gui()
 
+GUI().show_gui()

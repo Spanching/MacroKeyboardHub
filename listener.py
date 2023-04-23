@@ -1,53 +1,62 @@
-import os
 import keyboard
 from typing import Callable, Any
 import sys
 import time
 from watchdog.observers import Observer
-from watchdog.events import FileModifiedEvent, FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler
+from enum import Enum
+from configuration_manager import ConfigurationManager
+from constants import PREFIX_ABBREVIATION, MACRO_KEYBOARD_FILE_TYPE, PREFIX_INTERNAL_FUNCTION, \
+    PREFIX_NEXT, PREFIX_PREV
 
-FILE_NAME = "configuration.mkc"
 
-class KeyboardEventHandler(FileSystemEventHandler):
+class FunctionType(Enum):
+    MACRO = 0
+    INTERNAL = 1
+    ABBREVIATION = 2
 
-    def __init__(self, keyboard) -> None:
-        self.keyboard = keyboard
-        self.last_updated = 0
-        super().__init__()
-    
-    def on_modified(self, event):
-        if time.time() - self.last_updated <= 1:
-            return
-        if event.src_path.endswith(".mkc"):
-            self.keyboard.update_hotkeys()
-            self.last_updated = time.time()
 
 class KeyFunction:
-    def __init__(self, arg: Any) -> None:
+    def __init__(self, arg: Any, function_type=FunctionType.MACRO, callback=None) -> None:
         self.arg = arg
+        self.type = function_type
+        self.callback = callback
 
     def get_function(self) -> Callable:
-        return lambda: keyboard.press_and_release(self.arg)
+        if self.type == FunctionType.MACRO:
+            return lambda: keyboard.press_and_release(self.arg)
+        elif self.type == FunctionType.ABBREVIATION:
+            return lambda: keyboard.write(self.arg)
+        elif self.type == FunctionType.INTERNAL:
+            def internal_function():
+                self.callback()
+            return internal_function
+
 
 class MacroKeyboard:
     def __init__(self) -> None:
         self.recording = False
-        self.hotkey_dict = {}
-        if not self.__exists_valid_config():
-            self.__init_config()
+        self.configuration_manager = ConfigurationManager()
         self.update_hotkeys(init=True)
         self.__observe()
-    
-    def update_hotkeys(self, init = False):
+
+    def update_hotkeys(self, init=False):
         if not init:
             keyboard.remove_all_hotkeys()
-        with open(FILE_NAME, "r") as file:
-            lines = file.readlines()
-            for line in lines:
-                key, arg = line.strip().split(',')
+        for key, arg in self.configuration_manager.get_configuration().keys.items():
+            if arg.startswith(PREFIX_INTERNAL_FUNCTION):
+                def callback():
+                    if arg.endswith(PREFIX_PREV):
+                        self.configuration_manager.previous_configuration()
+                    elif arg.endswith(PREFIX_NEXT):
+                        self.configuration_manager.next_configuration()
+                    self.update_hotkeys()
+                function = KeyFunction(arg, FunctionType.INTERNAL, callback=callback)
+            elif arg.startswith(PREFIX_ABBREVIATION):
+                function = KeyFunction(arg.split(':')[-1], function_type=FunctionType.ABBREVIATION)
+            else:
                 function = KeyFunction(arg)
-                self.hotkey_dict[key] = function
-                keyboard.add_hotkey(key, function.get_function())
+            keyboard.add_hotkey(key, function.get_function())
 
     def __observe(self) -> None:
         path = sys.argv[1] if len(sys.argv) > 1 else '.'
@@ -62,37 +71,21 @@ class MacroKeyboard:
             observer.stop()
         observer.join()
 
-    def __exists_valid_config(self) -> bool:
-        if not os.path.isfile(FILE_NAME):
-            return False
-        with open(FILE_NAME, "r") as file:
-            lines = file.readlines()
-            if len(lines) != 16:
-                return False
-            for line in lines:
-                if not ',' in line:
-                    return False
-        return True
-    
-    def __init_config(self) -> None:
-        lines = ['f13,f13\n',
-            'f14,f14\n',
-            'f15,f15\n',
-            'f16,f16\n',
-            'f17,f17\n',
-            'f18,f18\n',
-            'f19,f19\n',
-            'f20,f20\n',
-            'strg+f13,strg+f13\n',
-            'strg+f14,strg+f14\n',
-            'strg+f15,strg+f15\n',
-            'strg+f16,strg+f16\n',
-            'strg+f17,strg+f17\n',
-            'strg+f18,strg+f18\n',
-            'strg+f19,strg+f19\n',
-            'strg+f20,strg+f20\n',
-        ]
-        with open(FILE_NAME, "w") as file:
-            file.writelines(lines)
-    
+
+class KeyboardEventHandler(FileSystemEventHandler):
+
+    def __init__(self, macro_keyboard: MacroKeyboard) -> None:
+        self.keyboard = macro_keyboard
+        self.last_updated = 0
+        super().__init__()
+
+    def on_modified(self, event):
+        if time.time() - self.last_updated <= 1:
+            return
+        if event.src_path.endswith(MACRO_KEYBOARD_FILE_TYPE):
+            self.keyboard.configuration_manager.read_configuration()
+            self.keyboard.update_hotkeys()
+            self.last_updated = time.time()
+
+
 MacroKeyboard()
