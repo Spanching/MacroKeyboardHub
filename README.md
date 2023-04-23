@@ -11,21 +11,21 @@ This software allows me to dynamically set the keys of my macro Keyboard to (alm
 consists of two parts: The graphical user interface and the listener that maps the actual key presses of the keyboard 
 to their respective macros.
 
-# GUI 
+# GUI
 
 The simple GUI I programmed uses [PySimpleGui](https://www.pysimplegui.org/en/latest/). It allows to see the current 
 function of each key and when pressing the respective button, one can set new functions for the key:
 
-The basic GUI             |  Edit modal for a key 
-:-------------------------:|:-------------------------:
-![](images/MacroKeyboardHub.PNG)  |  ![](images/MacroKeyboardHubClick.PNG)
+|          The basic GUI           |         Edit modal for a key          |
+|:--------------------------------:|:-------------------------------------:|
+| ![](images/MacroKeyboardHub.PNG) | ![](images/MacroKeyboardHubClick.PNG) |
 
 When you want to record a new macro for a key, you can simply click on the Edit button, but you can also add an 
 abbreviation. This will ask you for the abbreviations name and the text that it should contain as you can see here:
 
-Recording Macro           |            Abbreviation Name             |  Abbreviation Text
-:-------------------------:|:----------------------------------------:|:-------------------------:
-![](images/MacroKeyboardHubEdit.PNG)  | ![](images/MacroKeyboardHubAbbrName.PNG) | ![](images/MacroKeyboardHubAbbr.PNG)
+|           Recording Macro            |            Abbreviation Name             |          Abbreviation Text           |
+|:------------------------------------:|:----------------------------------------:|:------------------------------------:|
+| ![](images/MacroKeyboardHubEdit.PNG) | ![](images/MacroKeyboardHubAbbrName.PNG) | ![](images/MacroKeyboardHubAbbr.PNG) |
 
 Now whenever you click the respective button on the Macro Keyboard, the macro will be executed, or the abbreviation 
 will be written in the textfield that you are currently in. This is very nice for email addresses that you might need 
@@ -48,7 +48,7 @@ everything you need in a new virtual environment with a simple
 poetry install
 ```
 
-for easy usage on windows I use [pyinstaller](https://pyinstaller.org/en/stable/). I can create two executables, one for
+for easy usage on Windows I use [pyinstaller](https://pyinstaller.org/en/stable/). I can create two executables, one for
 the gui and one for the listener like this:
 
 ```bash
@@ -56,5 +56,5 @@ pyinstaller --onefile gui.py -w
 pyinstaller --onefile listener.py -w
 ```
 
-I then use these executables to start the listener on windows startup and I have the executable for the gui handy for 
+I then use these executables to start the listener on Windows startup, and I have the executable for the gui handy for 
 editing whenever I need to. 

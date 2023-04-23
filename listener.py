@@ -3,26 +3,33 @@ from typing import Callable, Any
 import sys
 import time
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from enum import Enum
 from configuration_manager import ConfigurationManager
-from constants import PREFIX_ABBREVIATION, MACRO_KEYBOARD_FILE_TYPE, PREFIX_INTERNAL_FUNCTION, \
-    PREFIX_NEXT, PREFIX_PREV
+from constants import ABBREVIATION, MACRO_KEYBOARD_FILE_TYPE, INTERNAL_FUNCTION, \
+    NEXT, PREV
 
 
 class FunctionType(Enum):
+    """The type of the Function for a key
+    """
     MACRO = 0
     INTERNAL = 1
     ABBREVIATION = 2
 
 
 class KeyFunction:
-    def __init__(self, arg: Any, function_type=FunctionType.MACRO, callback=None) -> None:
+    """Represents the Function of a Key
+    """
+    def __init__(self, arg: str, function_type=FunctionType.MACRO, callback: Callable = None) -> None:
         self.arg = arg
         self.type = function_type
         self.callback = callback
 
     def get_function(self) -> Callable:
+        """Prepares a function callable for the function this represents
+        :return: Callable for the KeyFunction
+        """
         if self.type == FunctionType.MACRO:
             return lambda: keyboard.press_and_release(self.arg)
         elif self.type == FunctionType.ABBREVIATION:
@@ -35,30 +42,37 @@ class KeyFunction:
 
 class MacroKeyboard:
     def __init__(self) -> None:
+        """Initializes the MacroKeyboard with its configuration manager and loads the functions from there
+        """
         self.recording = False
         self.configuration_manager = ConfigurationManager()
         self.update_hotkeys(init=True)
         self.__observe()
 
-    def update_hotkeys(self, init=False):
+    def update_hotkeys(self, init=False) -> None:
+        """Update the hotkeys for the keyboard package, used every time the configuration changes
+        :param init: if it is the first initialization (throws error if no hotkey exists)
+        """
         if not init:
             keyboard.remove_all_hotkeys()
         for key, arg in self.configuration_manager.get_configuration().keys.items():
-            if arg.startswith(PREFIX_INTERNAL_FUNCTION):
+            if arg.startswith(INTERNAL_FUNCTION):
                 def callback():
-                    if arg.endswith(PREFIX_PREV):
+                    if arg.endswith(PREV):
                         self.configuration_manager.previous_configuration()
-                    elif arg.endswith(PREFIX_NEXT):
+                    elif arg.endswith(NEXT):
                         self.configuration_manager.next_configuration()
                     self.update_hotkeys()
                 function = KeyFunction(arg, FunctionType.INTERNAL, callback=callback)
-            elif arg.startswith(PREFIX_ABBREVIATION):
+            elif arg.startswith(ABBREVIATION):
                 function = KeyFunction(arg.split(':')[-1], function_type=FunctionType.ABBREVIATION)
             else:
                 function = KeyFunction(arg)
             keyboard.add_hotkey(key, function.get_function())
 
     def __observe(self) -> None:
+        """Observes the current directory for changes, used to react to configuration changes made in the GUI
+        """
         path = sys.argv[1] if len(sys.argv) > 1 else '.'
         event_handler = KeyboardEventHandler(self)
         observer = Observer()
@@ -75,11 +89,17 @@ class MacroKeyboard:
 class KeyboardEventHandler(FileSystemEventHandler):
 
     def __init__(self, macro_keyboard: MacroKeyboard) -> None:
+        """Handles Events observed by the watchdog observer
+        :param macro_keyboard: The keyboard we want to apply changes to
+        """
         self.keyboard = macro_keyboard
         self.last_updated = 0
         super().__init__()
 
-    def on_modified(self, event):
+    def on_modified(self, event: FileSystemEvent) -> None:
+        """Triggered when a file or directory in this directory was modified
+        :param event: the Modification Event triggered
+        """
         if time.time() - self.last_updated <= 1:
             return
         if event.src_path.endswith(MACRO_KEYBOARD_FILE_TYPE):
