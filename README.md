@@ -11,6 +11,11 @@ This software allows me to dynamically set the keys of my macro Keyboard to (alm
 consists of two parts: The graphical user interface and the listener that maps the actual key presses of the keyboard 
 to their respective macros.
 
+It also contains a (semi-) functional automatic change of configuration based on the actual foreground window. To enable
+that, you have to edit the .env file and set ```USE_FOREGROUND_WINDOW_DETECTION = True``` and add all the executables 
+that you want to listen to and have a configuration named after (without the file ending) to the list like this: 
+```EXE_LIST = ["chrome.exe", "explorer.exe"]```
+
 # GUI
 
 The simple GUI I programmed uses [PySimpleGui](https://www.pysimplegui.org/en/latest/). It allows to see the current 
