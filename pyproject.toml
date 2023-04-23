@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "macro-keyboard-hub"
+version = "0.1.0"
+description = "Simple Python Software to configure my MacroKeyboard in any way I want."
+authors = ["Andreas Kruck <andreas@kruck.cc>"]
+readme = "README.md"
+packages = [{include = "macro_keyboard_hub"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+keyboard = "^0.13.5"
+watchdog = "^3.0.0"
+PySimpleGUI = "^4.60.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
