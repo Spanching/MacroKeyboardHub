@@ -1,10 +1,13 @@
 import os
+from multiprocessing import freeze_support
 from threading import Thread
 
 import keyboard
 from typing import Callable
 import sys
 import time
+
+import ptoaster
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from enum import Enum
@@ -28,6 +31,7 @@ class FunctionType(Enum):
 class KeyFunction:
     """Represents the Function of a Key
     """
+
     def __init__(self, arg: str, function_type=FunctionType.MACRO, callback: Callable = None) -> None:
         self.arg = arg
         self.type = function_type
@@ -56,7 +60,7 @@ class MacroKeyboard:
         self.update_hotkeys(init=True)
         self.__init_env()
         if os.getenv("USE_FOREGROUND_WINDOW_DETECTION"):
-            Thread(target=lambda: WindowsEventHandler(self.configuration_manager)).start()
+            Thread(target=lambda: WindowsEventHandler(self.configuration_manager, self.update_hotkeys)).start()
         self.__observe()
 
     def update_hotkeys(self, init=False) -> None:
@@ -130,4 +134,5 @@ class KeyboardEventHandler(FileSystemEventHandler):
             self.last_updated = time.time()
 
 
-MacroKeyboard()
+if __name__ == "__main__":
+    MacroKeyboard()

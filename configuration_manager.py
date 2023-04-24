@@ -1,7 +1,8 @@
 import json
 import os
-import PySimpleGUI as Psg
 from typing import Dict
+
+from ptoaster import ptoaster
 
 from constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
 
@@ -29,7 +30,7 @@ class ConfigurationManager:
         else:
             self.__init_config()
 
-    def set_configuration_for_process(self, process: str) -> None:
+    def set_configuration_for_process(self, process: str) -> bool:
         """Sets configuration when foreground executable changes
         :param process: the name of the process that is now in the foreground
         """
@@ -39,7 +40,8 @@ class ConfigurationManager:
                 if self.configuration_index != index:
                     self.configuration_index = index
                     self.__show_configuration_popup()
-                    break
+                    return True
+        return False
 
     def read_configuration(self) -> None:
         """Reads the configuration file and updates the configurations list
@@ -119,12 +121,9 @@ class ConfigurationManager:
     def __show_configuration_popup(self) -> None:
         """Shows a psg popup with the current configuration
         """
-        pass
-        Psg.popup_auto_close(
-            f"Configuration changed to {self.configurations[self.configuration_index].name}",
-            keep_on_top=True, relative_location=(0, -800), no_titlebar=True,
-            button_type=Psg.POPUP_BUTTONS_NO_BUTTONS, auto_close_duration=1
-        )
+        ptoaster.notify('Macro Keyboard', f'Configuration is now {self.configurations[self.configuration_index].name}',
+                        fade_in_duration=50,
+                        display_duration_in_ms=800, alpha=1)
 
     def __save_configurations(self) -> None:
         """Writes the current configurations in the configuration file
