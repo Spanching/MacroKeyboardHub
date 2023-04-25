@@ -1,5 +1,4 @@
 import os
-from multiprocessing import freeze_support
 from threading import Thread
 
 import keyboard
@@ -7,17 +6,13 @@ from typing import Callable
 import sys
 import time
 
-import ptoaster
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from enum import Enum
 from configuration_manager import ConfigurationManager
-from constants import ABBREVIATION, MACRO_KEYBOARD_FILE_TYPE, INTERNAL_FUNCTION, \
-    NEXT, PREV
+from constants import ABBREVIATION, MACRO_KEYBOARD_FILE_TYPE, INTERNAL_FUNCTION, NEXT, PREV
 from windows_event_handler import WindowsEventHandler
 from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class FunctionType(Enum):
@@ -135,4 +130,5 @@ class KeyboardEventHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
+    load_dotenv()
     MacroKeyboard()

@@ -36,3 +36,5 @@ DEFAULT_CONFIG_KEYS = {
     'strg+f19': 'FKT_PREV',
     'strg+f20': 'FKT_NEXT',
 }
+
+POPUP_PADDING = 20

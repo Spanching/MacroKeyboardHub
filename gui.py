@@ -30,7 +30,7 @@ class GUI:
              Psg.Button("Reset", key=f"{RESET}_{CONFIG}")],
             *button_lists
         ]
-        self.window = Psg.Window("Macro Keyboard Hub", layout)
+        self.window = Psg.Window("Macro Keyboard Hub", layout, use_default_focus=False)
 
     def start(self) -> None:
         """Starts the GUI event loop
@@ -196,4 +196,5 @@ class GUI:
         return arg.replace("+", " + ")
 
 
-GUI().start()
+if __name__ == "__main__":
+    GUI().start()

@@ -1,10 +1,10 @@
 import json
 import os
 from typing import Dict
+import PySimpleGUI as Psg
+from win32api import GetMonitorInfo, MonitorFromPoint
 
-from ptoaster import ptoaster
-
-from constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
+from constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS, POPUP_PADDING
 
 
 class Configuration:
@@ -121,9 +121,18 @@ class ConfigurationManager:
     def __show_configuration_popup(self) -> None:
         """Shows a psg popup with the current configuration
         """
-        ptoaster.notify('Macro Keyboard', f'Configuration is now {self.configurations[self.configuration_index].name}',
-                        fade_in_duration=50,
-                        display_duration_in_ms=800, alpha=1)
+        layout = [
+            [Psg.Text(f"Configuration changed to {self.configurations[self.configuration_index].name}", font="Arial",
+                      background_color="black")]
+        ]
+        window = Psg.Window("Macro Keyboard Hub", layout, use_default_focus=False, finalize=True, modal=True,
+                            no_titlebar=True, auto_close=True, auto_close_duration=1, background_color="black",
+                            element_padding=20, keep_on_top=True)
+        screen_width, screen_height = GetMonitorInfo(MonitorFromPoint((0, 0))).get("Work")[2:4]
+        win_width, win_height = window.size
+        x, y = screen_width - win_width - POPUP_PADDING, screen_height - win_height - POPUP_PADDING
+        window.move(x, y)
+        window.read()
 
     def __save_configurations(self) -> None:
         """Writes the current configurations in the configuration file
@@ -150,6 +159,3 @@ class ConfigurationManager:
         lines = {'default': DEFAULT_CONFIG_KEYS}
         with open(DEFAULT_FILE_NAME, "w") as file:
             json.dump(lines, file)
-
-
-ConfigurationManager()
