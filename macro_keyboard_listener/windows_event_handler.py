@@ -5,9 +5,8 @@ import time
 
 from win32api import OpenProcess
 from win32process import GetWindowThreadProcessId, GetModuleFileNameEx
-from configuration_manager import ConfigurationManager
+from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager
 from typing import Callable
-
 
 EVENT_SYSTEM_DIALOGSTART = 0x0010
 WINEVENT_OUTOFCONTEXT = 0x0000
@@ -29,6 +28,7 @@ WinEventProcType = ctypes.WINFUNCTYPE(
 
 timer = 0
 last_executable = None
+
 
 class WindowsEventHandler:
     def __init__(self, configuration_manager: ConfigurationManager, update_hotkeys: Callable) -> None:
@@ -63,21 +63,22 @@ class WindowsEventHandler:
         """Creates a callback for the foreground window change
         :return: Callable callback that changes configuration automatically
         """
-        @staticmethod
+
         def callback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime):
             global timer, last_executable
             if time.time() - timer <= 1:
                 return
             try:
-                t, p = GetWindowThreadProcessId(hwnd)
+                _, p = GetWindowThreadProcessId(hwnd)
                 handle = OpenProcess(0x0410, False, p)
                 exe = GetModuleFileNameEx(handle, 0)
                 exe = exe.split("\\")[-1]
                 if exe in os.getenv("EXE_LIST") and exe != last_executable:
                     if self.configuration_manager.set_configuration_for_process(exe):
                         self.update_hotkeys()
-                    last_executable = exe
-                    timer = time.time()
+                        last_executable = exe
+                        timer = time.time()
             except Exception as e:
                 print(e)
+
         return callback

@@ -1,10 +1,8 @@
 import json
 import os
-from typing import Dict
-import PySimpleGUI as Psg
-from win32api import GetMonitorInfo, MonitorFromPoint
+from typing import Dict, Callable
 
-from constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS, POPUP_PADDING
+from macro_keyboard_configuration_management.constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
 
 
 class Configuration:
@@ -19,10 +17,11 @@ class Configuration:
 
 class ConfigurationManager:
 
-    def __init__(self):
+    def __init__(self, popup_callback: Callable = None):
         """Handles persistence of Configurations and changes, used by GUI and Listener without synchronization of
         indices, but with synchronized configurations
         """
+        self.popup_callback = popup_callback
         self.configurations = []
         self.configuration_index = 0
         if self.__exists_valid_config():
@@ -39,7 +38,8 @@ class ConfigurationManager:
             if config.name == name:
                 if self.configuration_index != index:
                     self.configuration_index = index
-                    self.__show_configuration_popup()
+                    if self.popup_callback is not None:
+                        self.popup_callback()
                     return True
         return False
 
@@ -66,8 +66,8 @@ class ConfigurationManager:
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index + 1) % len(self.configurations)
-            if popup:
-                self.__show_configuration_popup()
+            if popup and self.popup_callback is not None:
+                self.popup_callback()
 
     def previous_configuration(self, popup=True) -> None:
         """Decrements the index for the configurations
@@ -75,8 +75,8 @@ class ConfigurationManager:
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index - 1) % len(self.configurations)
-            if popup:
-                self.__show_configuration_popup()
+            if popup and self.popup_callback is not None:
+                self.popup_callback()
 
     # GUI Functions
     def add_new_configuration(self, name: str) -> None:
@@ -117,22 +117,6 @@ class ConfigurationManager:
         """
         self.configurations[self.configuration_index].keys = DEFAULT_CONFIG_KEYS
         self.__save_configurations()
-
-    def __show_configuration_popup(self) -> None:
-        """Shows a psg popup with the current configuration
-        """
-        layout = [
-            [Psg.Text(f"Configuration changed to {self.configurations[self.configuration_index].name}", font="Arial",
-                      background_color="black")]
-        ]
-        window = Psg.Window("Macro Keyboard Hub", layout, use_default_focus=False, finalize=True, modal=True,
-                            no_titlebar=True, auto_close=True, auto_close_duration=1, background_color="black",
-                            element_padding=20, keep_on_top=True)
-        screen_width, screen_height = GetMonitorInfo(MonitorFromPoint((0, 0))).get("Work")[2:4]
-        win_width, win_height = window.size
-        x, y = screen_width - win_width - POPUP_PADDING, screen_height - win_height - POPUP_PADDING
-        window.move(x, y)
-        window.read()
 
     def __save_configurations(self) -> None:
         """Writes the current configurations in the configuration file

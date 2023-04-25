@@ -57,9 +57,15 @@ for easy usage on Windows I use [pyinstaller](https://pyinstaller.org/en/stable/
 the gui and one for the listener like this:
 
 ```bash
-pyinstaller --onefile gui.py -w
-pyinstaller --onefile listener.py -w
+cd macro_keyboard_hub
+pyinstaller --onefile gui.py -w -n MacroKeyboardHub
+
+cd macro_keyboard_listener
+pyinstaller --onefile listener.py -w -n MacroKeyboardListener
 ```
+
+The executables can then be found in the dist folders in their respective directories. Copy them into the same directory
+for the gui and Listener to use the same configuration file.
 
 I then use these executables to start the listener on Windows startup, and I have the executable for the gui handy for 
 editing whenever I need to. 

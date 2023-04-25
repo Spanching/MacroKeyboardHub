@@ -2,8 +2,8 @@ import PySimpleGUI as Psg
 import keyboard
 import re
 
-from configuration_manager import ConfigurationManager
-from constants import ABBREVIATION, BUTTON, \
+from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager
+from macro_keyboard_configuration_management.constants import ABBREVIATION, BUTTON, \
     INTERNAL_FUNCTION, CONFIG, RESET, ADD, DELETE, PREV, NEXT, \
     CANCEL, EDIT
 
@@ -194,7 +194,3 @@ class GUI:
             _, name = arg.split("_")
             return name
         return arg.replace("+", " + ")
-
-
-if __name__ == "__main__":
-    GUI().start()
