@@ -13,8 +13,7 @@ def __init_env() -> None:
     if not os.path.isfile(".env"):
         with open(".env", 'w') as env_file:
             env_file.writelines([
-                'USE_FOREGROUND_WINDOW_DETECTION = False\n',
-                'SHOW_POPUP = False\n',
+                'USE_FOREGROUND_WINDOW_DETECTION = True\n',
                 'EXE_LIST = ["chrome.exe", "explorer.exe"]\n'
             ])
 
