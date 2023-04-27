@@ -38,8 +38,9 @@ class MacroKeyboard:
             item = self.popup_queue.get()
             self.show_configuration_popup(item)
 
-    def update_hotkeys(self, init=False) -> None:
+    def update_hotkeys(self, init=False, popup=True) -> None:
         """Update the hotkeys for the keyboard package, used every time the configuration changes
+        :param popup: if popup should be shown
         :param init: if it is the first initialization (throws error if no hotkey exists)
         """
         try:
@@ -51,7 +52,8 @@ class MacroKeyboard:
             keyboard.remove_all_hotkeys()
         for key, function in self.configuration_manager.get_configuration().keys.items():
             keyboard.add_hotkey(key, self.get_function_for_key_function(function), suppress=True)
-        self.popup_queue.put(f"{self.configuration_manager.get_configuration().name}")
+        if popup:
+            self.popup_queue.put(f"{self.configuration_manager.get_configuration().name}")
         logging.info("Hotkeys updated")
 
     def get_function_for_key_function(self, key_function: KeyFunction):
@@ -74,9 +76,8 @@ class MacroKeyboard:
     def show_configuration_popup(name) -> None:
         """Shows a psg popup with the current configuration
             """
-        if os.getenv("SHOW_POPUP", "False").lower() == "true":
-            Psg.popup_auto_close(f"Configuration changed to {name}", font="Arial", background_color="black",
-                                 button_type=Psg.POPUP_BUTTONS_NO_BUTTONS, no_titlebar=True)
+        Psg.popup_auto_close(f"Configuration changed to {name}", font="Arial", background_color="black",
+                             button_type=Psg.POPUP_BUTTONS_NO_BUTTONS, no_titlebar=True, auto_close_duration=1)
 
     def __observe(self) -> None:
         """Observes the current directory for changes, used to react to configuration changes made in the GUI

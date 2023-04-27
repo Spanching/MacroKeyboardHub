@@ -91,9 +91,9 @@ class GUI:
         elif event.startswith(DELETE):
             self.configuration_manager.delete_current_configuration()
         elif event.startswith(PREV):
-            self.configuration_manager.previous_configuration(popup=False)
+            self.configuration_manager.previous_configuration()
         elif event.startswith(NEXT):
-            self.configuration_manager.next_configuration(popup=False)
+            self.configuration_manager.next_configuration()
         self.__update_configuration_name_and_buttons()
 
     def __update_config_name(self) -> None:

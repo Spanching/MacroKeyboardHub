@@ -83,7 +83,7 @@ class WindowsEventHandler:
                 if exe in os.getenv("EXE_LIST") and exe != last_executable:
                     process = exe.split('.')[0]
                     if self.configuration_manager.set_configuration_for_process(process):
-                        self.update_hotkeys()
+                        self.update_hotkeys(popup=False)
                         last_executable = exe
                         timer = time.time()
                         logging.info(f"WindowsEvent triggered and set configuration for {exe}")

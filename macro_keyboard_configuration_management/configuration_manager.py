@@ -52,11 +52,10 @@ class Configuration:
 
 class ConfigurationManager:
 
-    def __init__(self, popup_callback: Callable = None):
+    def __init__(self):
         """Handles persistence of Configurations and changes, used by GUI and Listener without synchronization of
         indices, but with synchronized configurations
         """
-        self.popup_callback = popup_callback
         self.configurations: List[Configuration] = []
         self.configuration_index = 0
         self.__update_config()
@@ -70,8 +69,6 @@ class ConfigurationManager:
             if config.name == process:
                 if self.configuration_index != index:
                     self.configuration_index = index
-                    if self.popup_callback is not None:
-                        self.popup_callback()
                     logging.info(f"Set configuration for process {process}")
                     return True
         logging.info(f"No configuration set for process {process}")
@@ -99,7 +96,7 @@ class ConfigurationManager:
         """
         return self.configurations[self.configuration_index]
 
-    def next_configuration(self, popup=True) -> None:
+    def next_configuration(self) -> None:
         """Increments the index for the configurations
         :param popup: if to display a popup (only wanted for changes from the keyboard itself)
         """
@@ -107,10 +104,8 @@ class ConfigurationManager:
             self.configuration_index = (self.configuration_index + 1) % len(self.configurations)
             logging.info(f"Switching to next configuration at index {self.configuration_index} "
                                      f"with name {self.configurations[self.configuration_index].name}")
-            if popup and self.popup_callback is not None:
-                self.popup_callback()
 
-    def previous_configuration(self, popup=True) -> None:
+    def previous_configuration(self) -> None:
         """Decrements the index for the configurations
         :param popup: if to display a popup (only wanted for changes from the keyboard itself)
         """
@@ -118,8 +113,6 @@ class ConfigurationManager:
             self.configuration_index = (self.configuration_index - 1) % len(self.configurations)
             logging.info(f"Switching to previous configuration at index {self.configuration_index} "
                                      f"with name {self.configurations[self.configuration_index].name}")
-            if popup and self.popup_callback is not None:
-                self.popup_callback()
 
     # GUI Functions
     def add_new_configuration(self, name: str) -> None:
