@@ -58,10 +58,10 @@ the gui and one for the listener like this:
 
 ```bash
 cd macro_keyboard_hub
-pyinstaller --onefile gui.py -w -n MacroKeyboardHub
+pyinstaller --onefile __main__.py -w -n gui
 
 cd macro_keyboard_listener
-pyinstaller --onefile listener.py -w -n MacroKeyboardListener
+pyinstaller --onefile __main__.py -w -n listener
 ```
 
 The executables can then be found in the dist folders in their respective directories. Copy them into the same directory

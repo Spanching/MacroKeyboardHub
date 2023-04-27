@@ -4,36 +4,17 @@ import queue
 from threading import Thread
 
 import keyboard
-from typing import Callable
 import sys
 import time
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
-from enum import Enum
-from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager
-from macro_keyboard_configuration_management.constants import ABBREVIATION, MACRO_KEYBOARD_FILE_TYPE, \
-    INTERNAL_FUNCTION, NEXT, PREV, POPUP_PADDING
+from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager, FunctionType, \
+    KeyFunction
+from macro_keyboard_configuration_management.constants import MACRO_KEYBOARD_FILE_TYPE, NEXT, PREV, POPUP_PADDING
 from macro_keyboard_listener.windows_event_handler import WindowsEventHandler
 import PySimpleGUI as Psg
 from win32api import GetMonitorInfo, MonitorFromPoint
-
-
-class FunctionType(Enum):
-    """The type of the Function for a key
-    """
-    MACRO = 0
-    INTERNAL = 1
-    ABBREVIATION = 2
-
-
-class KeyFunction:
-    """Represents the Function of a Key
-    """
-
-    def __init__(self, arg: str, function_type=FunctionType.MACRO) -> None:
-        self.arg = arg
-        self.type = function_type
 
 
 class MacroKeyboard:
@@ -68,24 +49,17 @@ class MacroKeyboard:
             return
         if not init:
             keyboard.remove_all_hotkeys()
-        for key, arg in self.configuration_manager.get_configuration().keys.items():
-            if arg.startswith(INTERNAL_FUNCTION):
-
-                function = KeyFunction(arg, FunctionType.INTERNAL)
-            elif arg.startswith(ABBREVIATION):
-                function = KeyFunction(arg.split(':')[-1], function_type=FunctionType.ABBREVIATION)
-            else:
-                function = KeyFunction(arg)
+        for key, function in self.configuration_manager.get_configuration().keys.items():
             keyboard.add_hotkey(key, self.get_function_for_key_function(function), suppress=True)
         self.popup_queue.put(f"{self.configuration_manager.get_configuration().name}")
         logging.info("Hotkeys updated")
 
     def get_function_for_key_function(self, key_function: KeyFunction):
-        if key_function.type == FunctionType.MACRO:
+        if key_function.function_type == FunctionType.MACRO:
             return lambda: keyboard.press_and_release(key_function.arg)
-        elif key_function.type == FunctionType.ABBREVIATION:
+        elif key_function.function_type == FunctionType.ABBREVIATION:
             return lambda: keyboard.write(key_function.arg)
-        elif key_function.type == FunctionType.INTERNAL:
+        elif key_function.function_type == FunctionType.INTERNAL:
             def callback():
                 if key_function.arg.endswith(PREV):
                     self.configuration_manager.previous_configuration()
@@ -93,6 +67,7 @@ class MacroKeyboard:
                 elif key_function.arg.endswith(NEXT):
                     self.configuration_manager.next_configuration()
                     self.update_hotkeys()
+
             return callback
 
     @staticmethod

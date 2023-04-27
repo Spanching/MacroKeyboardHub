@@ -20,22 +20,22 @@ EDIT = "EDIT"
 
 DEFAULT_FILE_NAME = "configuration.mkc"
 DEFAULT_CONFIG_KEYS = {
-    'f13': 'f13',
-    'f14': 'f14',
-    'f15': 'f15',
-    'f16': 'f16',
-    'f17': 'f17',
-    'f18': 'f18',
-    'f19': 'f19',
-    'f20': 'f20',
-    'strg+f13': 'strg+f13',
-    'strg+f14': 'strg+f14',
-    'strg+f15': 'strg+f15',
-    'strg+f16': 'strg+f16',
-    'strg+f17': 'strg+f17',
-    'strg+f18': 'strg+f18',
-    'strg+f19': 'FKT_PREV',
-    'strg+f20': 'FKT_NEXT',
+    'f13': {"name": None, 'arg': 'f13', 'function_type': 'MACRO'},
+    'f14': {"name": None, 'arg': 'f14', 'function_type': 'MACRO'},
+    'f15': {"name": None, 'arg': 'f15', 'function_type': 'MACRO'},
+    'f16': {"name": None, 'arg': 'f16', 'function_type': 'MACRO'},
+    'f17': {"name": None, 'arg': 'f17', 'function_type': 'MACRO'},
+    'f18': {"name": None, 'arg': 'f18', 'function_type': 'MACRO'},
+    'f19': {"name": None, 'arg': 'f19', 'function_type': 'MACRO'},
+    'f20': {"name": None, 'arg': 'f20', 'function_type': 'MACRO'},
+    'strg+f13': {"name": None, 'arg': 'strg+f13', 'function_type': 'MACRO'},
+    'strg+f14': {"name": None, 'arg': 'strg+f14', 'function_type': 'MACRO'},
+    'strg+f15': {"name": None, 'arg': 'strg+f15', 'function_type': 'MACRO'},
+    'strg+f16': {"name": None, 'arg': 'strg+f16', 'function_type': 'MACRO'},
+    'strg+f17': {"name": None, 'arg': 'strg+f17', 'function_type': 'MACRO'},
+    'strg+f18': {"name": None, 'arg': 'strg+f18', 'function_type': 'MACRO'},
+    'strg+f19': {"name": None, 'arg': 'FKT_PREV', 'function_type': 'MACRO'},
+    'strg+f20': {"name": None, 'arg': 'FKT_NEXT', 'function_type': 'MACRO'},
 }
 
 POPUP_PADDING = 20

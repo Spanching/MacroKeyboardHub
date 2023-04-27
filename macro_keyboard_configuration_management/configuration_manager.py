@@ -1,19 +1,53 @@
 import json
 import os
+from enum import Enum
 from typing import Dict, Callable, List
 
 from macro_keyboard_configuration_management.constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
 import logging
 
 
+class FunctionType(str, Enum):
+    """The type of the Function for a key
+    """
+    MACRO = "MACRO"
+    INTERNAL = "INTERNAL"
+    ABBREVIATION = "ABBREVIATION"
+
+
+class KeyFunction:
+    """Represents the Function of a Key
+    """
+
+    def __init__(self, arg: str, function_type=FunctionType.MACRO, name: str = None) -> None:
+        self.arg = arg
+        self.function_type = function_type
+        self.name = name
+
+    def get_name(self):
+        if self.function_type == FunctionType.ABBREVIATION:
+            return self.name
+        return self.arg.replace('+', ' + ')
+
+    def to_dict(self) -> Dict:
+        """Maps KeyFunction to dictionary
+        :return: Dict representing this KeyFunction
+        """
+        return {
+            "name": self.name,
+            "arg": self.arg,
+            "function_type": self.function_type.name
+        }
+
+
 class Configuration:
-    def __init__(self, name: str, key_dict: Dict) -> None:
+    def __init__(self, name: str, keys: Dict[str, KeyFunction]) -> None:
         """Represents a configuration for the MacroKeyboard
         :param name: the name of this representation
-        :param key_dict: the mapping of keys to their function
+        :param keys: the mapping of keys to their function
         """
         self.name = name
-        self.keys = key_dict
+        self.keys = keys
 
 
 class ConfigurationManager:
@@ -26,7 +60,7 @@ class ConfigurationManager:
         self.configurations: List[Configuration] = []
         self.configuration_index = 0
         self.__update_config()
-        self.__get_logger().info("Configuration Manager initialized")
+        logging.info("Configuration Manager initialized")
 
     def set_configuration_for_process(self, process: str) -> bool:
         """Sets configuration when foreground executable changes
@@ -38,9 +72,9 @@ class ConfigurationManager:
                     self.configuration_index = index
                     if self.popup_callback is not None:
                         self.popup_callback()
-                    self.__get_logger().info(f"Set configuration for process {process}")
+                    logging.info(f"Set configuration for process {process}")
                     return True
-        self.__get_logger().info(f"No configuration set for process {process}")
+        logging.info(f"No configuration set for process {process}")
         return False
 
     def read_configuration(self) -> None:
@@ -49,9 +83,14 @@ class ConfigurationManager:
         self.configurations.clear()
         with open(DEFAULT_FILE_NAME, "r") as file:
             configs: Dict = json.load(file)
-            for name in configs.keys():
+            for configuration_name in configs.keys():
+                key_dict = {}
+                config = configs[configuration_name]
+                for key in config.keys():
+                    name, arg, function_type = config[key].values()
+                    key_dict[key] = KeyFunction(arg, FunctionType(function_type), name)
                 self.configurations.append(
-                    Configuration(name=name, key_dict=configs[name])
+                    Configuration(name=configuration_name, keys=key_dict)
                 )
 
     def get_configuration(self) -> Configuration:
@@ -66,7 +105,7 @@ class ConfigurationManager:
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index + 1) % len(self.configurations)
-            self.__get_logger().info(f"Switching to next configuration at index {self.configuration_index} "
+            logging.info(f"Switching to next configuration at index {self.configuration_index} "
                                      f"with name {self.configurations[self.configuration_index].name}")
             if popup and self.popup_callback is not None:
                 self.popup_callback()
@@ -77,7 +116,7 @@ class ConfigurationManager:
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index - 1) % len(self.configurations)
-            self.__get_logger().info(f"Switching to previous configuration at index {self.configuration_index} "
+            logging.info(f"Switching to previous configuration at index {self.configuration_index} "
                                      f"with name {self.configurations[self.configuration_index].name}")
             if popup and self.popup_callback is not None:
                 self.popup_callback()
@@ -88,11 +127,11 @@ class ConfigurationManager:
         :param name: the name for the new configuration
         """
         self.configurations.append(
-            Configuration(name=name, key_dict=DEFAULT_CONFIG_KEYS)
+            Configuration(name=name, keys=self.configurations[self.configuration_index].keys)
         )
         self.configuration_index = len(self.configurations) - 1
         self.__save_configurations()
-        self.__get_logger().info(f"Adding configuration {name}")
+        logging.info(f"Adding configuration {name}")
 
     def delete_current_configuration(self) -> None:
         """Deletes the currently active Configuration
@@ -101,22 +140,22 @@ class ConfigurationManager:
             deleted = self.configurations.pop(self.configuration_index)
             self.configuration_index = (self.configuration_index - 1) % len(self.configurations)
             self.__save_configurations()
-            self.__get_logger().info(f"Deleted configuration {deleted.name}")
+            logging.info(f"Deleted configuration {deleted.name}")
 
-    def get_key_function(self, key: str) -> str:
+    def get_key_function(self, key: str) -> KeyFunction:
         """Returns the function for a key
         :param key: the key we want the function for
         :return: string representation of the key function
         """
         return self.configurations[self.configuration_index].keys[key]
 
-    def update_key(self, key: str, arg: str) -> None:
+    def update_key(self, key: str, function: KeyFunction) -> None:
         """Updates the function for a given key
         :param key: the key to update the function for
-        :param arg: the new function represented as string
+        :param function: The KeyFunction to update the key to
         """
-        self.__get_logger().info(f"Updating key {key} with argument {arg}")
-        self.configurations[self.configuration_index].keys[key] = arg
+        logging.info(f"Updating key {key}: {function.get_name()}")
+        self.configurations[self.configuration_index].keys[key] = function
         self.__save_configurations()
 
     def reset_current_config(self) -> None:
@@ -130,29 +169,24 @@ class ConfigurationManager:
         """
         config_dict = {}
         for config in self.configurations:
-            config_dict[config.name] = config.keys
+            key_dict = {}
+            key: str
+            function: KeyFunction
+            for key, function in config.keys.items():
+                key_dict[key] = function.to_dict()
+            config_dict[config.name] = key_dict
         with open(DEFAULT_FILE_NAME, "w") as file:
             json.dump(config_dict, file)
 
     def __update_config(self) -> None:
-        """Save default config if configuration file does not exist already
-        load config from file if it exists
+        """Save default configuration if configuration file does not exist already and
+        loads configuration from file
         """
         if not os.path.isfile(DEFAULT_FILE_NAME):
             lines = {'default': DEFAULT_CONFIG_KEYS}
             with open(DEFAULT_FILE_NAME, "w") as file:
                 json.dump(lines, file)
-            self.__get_logger().info("Wrote default config file")
+            logging.info("Wrote default config file")
         self.configurations.clear()
-        with open(DEFAULT_FILE_NAME, "r") as file:
-            configs: Dict = json.load(file)
-            for name in configs.keys():
-                self.configurations.append(
-                    Configuration(name=name, key_dict=configs[name])
-                )
-        self.__get_logger().info("Configuration loaded from file")
-
-    @staticmethod
-    def __get_logger():
-        return logging.getLogger()
-
+        self.read_configuration()
+        logging.info("Configuration loaded from file")
