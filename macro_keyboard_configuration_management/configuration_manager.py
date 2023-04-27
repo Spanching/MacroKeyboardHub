@@ -1,8 +1,9 @@
 import json
 import os
-from typing import Dict, Callable
+from typing import Dict, Callable, List
 
 from macro_keyboard_configuration_management.constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
+import logging
 
 
 class Configuration:
@@ -22,12 +23,10 @@ class ConfigurationManager:
         indices, but with synchronized configurations
         """
         self.popup_callback = popup_callback
-        self.configurations = []
+        self.configurations: List[Configuration] = []
         self.configuration_index = 0
-        if self.__exists_valid_config():
-            self.read_configuration()
-        else:
-            self.__init_config()
+        self.__update_config()
+        self.__get_logger().info("Configuration Manager initialized")
 
     def set_configuration_for_process(self, process: str) -> bool:
         """Sets configuration when foreground executable changes
@@ -40,7 +39,9 @@ class ConfigurationManager:
                     self.configuration_index = index
                     if self.popup_callback is not None:
                         self.popup_callback()
+                    self.__get_logger().info(f"Set configuration for process {process}")
                     return True
+        self.__get_logger().info(f"No configuration set for process {process}")
         return False
 
     def read_configuration(self) -> None:
@@ -66,6 +67,8 @@ class ConfigurationManager:
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index + 1) % len(self.configurations)
+            self.__get_logger().info(f"Switching to next configuration at index {self.configuration_index} "
+                                     f"with name {self.configurations[self.configuration_index].name}")
             if popup and self.popup_callback is not None:
                 self.popup_callback()
 
@@ -75,6 +78,8 @@ class ConfigurationManager:
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index - 1) % len(self.configurations)
+            self.__get_logger().info(f"Switching to previous configuration at index {self.configuration_index} "
+                                     f"with name {self.configurations[self.configuration_index].name}")
             if popup and self.popup_callback is not None:
                 self.popup_callback()
 
@@ -88,14 +93,16 @@ class ConfigurationManager:
         )
         self.configuration_index = len(self.configurations) - 1
         self.__save_configurations()
+        self.__get_logger().info(f"Adding configuration {name}")
 
     def delete_current_configuration(self) -> None:
         """Deletes the currently active Configuration
         """
         if len(self.configurations) > 1:
-            self.configurations.pop(self.configuration_index)
+            deleted = self.configurations.pop(self.configuration_index)
             self.configuration_index = (self.configuration_index - 1) % len(self.configurations)
             self.__save_configurations()
+            self.__get_logger().info(f"Deleted configuration {deleted.name}")
 
     def get_key_function(self, key: str) -> str:
         """Returns the function for a key
@@ -109,6 +116,7 @@ class ConfigurationManager:
         :param key: the key to update the function for
         :param arg: the new function represented as string
         """
+        self.__get_logger().info(f"Updating key {key} with argument {arg}")
         self.configurations[self.configuration_index].keys[key] = arg
         self.__save_configurations()
 
@@ -127,19 +135,24 @@ class ConfigurationManager:
         with open(DEFAULT_FILE_NAME, "w") as file:
             json.dump(config_dict, file)
 
-    @staticmethod
-    def __exists_valid_config() -> bool:
-        """If the configuration file already exists
-        :return: bool if the configuration file exists
+    def __update_config(self) -> None:
+        """Save default config if configuration file does not exist already
+        load config from file if it exists
         """
         if not os.path.isfile(DEFAULT_FILE_NAME):
-            return False
-        return True
+            lines = {'default': DEFAULT_CONFIG_KEYS}
+            with open(DEFAULT_FILE_NAME, "w") as file:
+                json.dump(lines, file)
+            self.__get_logger().info("Wrote default config file")
+        self.configurations.clear()
+        with open(DEFAULT_FILE_NAME, "r") as file:
+            configs: Dict = json.load(file)
+            for name in configs.keys():
+                self.configurations.append(
+                    Configuration(name=name, key_dict=configs[name])
+                )
+        self.__get_logger().info("Configuration loaded from file")
 
     @staticmethod
-    def __init_config() -> None:
-        """Initializes the configuration file, done if it does not exist on startup
-        """
-        lines = {'default': DEFAULT_CONFIG_KEYS}
-        with open(DEFAULT_FILE_NAME, "w") as file:
-            json.dump(lines, file)
+    def __get_logger():
+        return logging.getLogger()

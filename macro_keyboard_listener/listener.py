@@ -1,3 +1,4 @@
+import logging
 import os
 import queue
 from threading import Thread
@@ -60,6 +61,7 @@ class MacroKeyboard:
         if os.getenv("USE_FOREGROUND_WINDOW_DETECTION"):
             Thread(target=lambda: WindowsEventHandler(self.configuration_manager, self.update_hotkeys)).start()
         self.handle_queue()
+        logging.info("MacroKeyboard initialized")
 
     def handle_queue(self):
         while True:
@@ -72,6 +74,11 @@ class MacroKeyboard:
         """Update the hotkeys for the keyboard package, used every time the configuration changes
         :param init: if it is the first initialization (throws error if no hotkey exists)
         """
+        try:
+            self.configuration_manager.get_configuration()
+        except IndexError as ie:
+            logging.warning(ie)
+            return
         if not init:
             keyboard.remove_all_hotkeys()
         for key, arg in self.configuration_manager.get_configuration().keys.items():
@@ -91,6 +98,7 @@ class MacroKeyboard:
                 function = KeyFunction(arg)
             keyboard.add_hotkey(key, function.get_function(), suppress=True)
         self.popup_queue.put(f"{self.configuration_manager.get_configuration().name}")
+        logging.info("Hotkeys updated")
 
     @staticmethod
     def show_configuration_popup(name) -> None:
@@ -145,8 +153,10 @@ class KeyboardEventHandler(FileSystemEventHandler):
         :param event: the Modification Event triggered
         """
         if time.time() - self.last_updated <= 1:
+            logging.info("Modification detected but still on cooldown")
             return
         if event.src_path.endswith(MACRO_KEYBOARD_FILE_TYPE):
             self.keyboard.configuration_manager.read_configuration()
             self.keyboard.update_hotkeys()
             self.last_updated = time.time()
+            logging.info("Modification detected and updated")

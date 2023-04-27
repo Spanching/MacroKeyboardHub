@@ -4,6 +4,7 @@ the MacroKeyboard
 """
 
 MACRO_KEYBOARD_FILE_TYPE = ".mkc"
+LOGGING_FILE_NAME = "macrokeyboardhub.log"
 
 ABBREVIATION = "ABBR"
 BUTTON = "BUTTON"
