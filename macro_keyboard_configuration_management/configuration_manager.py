@@ -2,6 +2,8 @@ import json
 import os
 from typing import Dict, Callable, List
 
+from dotenv import load_dotenv
+
 from macro_keyboard_configuration_management.constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
 import logging
 
@@ -32,9 +34,8 @@ class ConfigurationManager:
         """Sets configuration when foreground executable changes
         :param process: the name of the process that is now in the foreground
         """
-        name = process.split(".")[0]
         for index, config in enumerate(self.configurations):
-            if config.name == name:
+            if config.name == process:
                 if self.configuration_index != index:
                     self.configuration_index = index
                     if self.popup_callback is not None:
@@ -156,3 +157,4 @@ class ConfigurationManager:
     @staticmethod
     def __get_logger():
         return logging.getLogger()
+

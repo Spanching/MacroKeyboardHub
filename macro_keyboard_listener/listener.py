@@ -56,8 +56,8 @@ class MacroKeyboard:
         self.configuration_manager = ConfigurationManager()
         self.popup_queue = queue.Queue(maxsize=2)
         self.update_hotkeys(init=True)
-        self.__init_env()
         self.__observe()
+        os.getenv("USE_FOREGROUND_WINDOW_DETECTION")
         if os.getenv("USE_FOREGROUND_WINDOW_DETECTION"):
             Thread(target=lambda: WindowsEventHandler(self.configuration_manager, self.update_hotkeys)).start()
         self.handle_queue()
@@ -124,18 +124,6 @@ class MacroKeyboard:
         observer = Observer()
         observer.schedule(event_handler, path, recursive=False)
         observer.start()
-
-    @staticmethod
-    def __init_env() -> None:
-        """Initializes the .env file if it does not exist
-        """
-        if os.path.isfile(".env"):
-            return
-        with open(".env", 'w') as env_file:
-            env_file.writelines([
-                'USE_FOREGROUND_WINDOW_DETECTION = False\n',
-                'EXE_LIST = ["chrome.exe", "explorer.exe"]\n'
-            ])
 
 
 class KeyboardEventHandler(FileSystemEventHandler):

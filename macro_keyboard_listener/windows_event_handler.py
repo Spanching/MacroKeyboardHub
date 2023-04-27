@@ -1,5 +1,6 @@
 import ctypes
 import ctypes.wintypes
+import logging
 import os
 import time
 
@@ -51,13 +52,18 @@ class WindowsEventHandler:
             0x0003
         )
         if self.hook == 0:
-            print('SetWinEventHook failed')
+            self.__get_logger().warning("SetWinEventHook failed")
             return
+        self.__get_logger().info("WindowsEventHandler initialized")
         msg = ctypes.wintypes.MSG()
         while user32.GetMessageW(ctypes.byref(msg), 0, 0, 0) != 0:
             user32.DispatchMessageW(msg)
         user32.UnhookWinEvent(self.hook)
         ole32.CoUninitialize()
+
+    @staticmethod
+    def __get_logger():
+        return logging.getLogger()
 
     def create_callback(self) -> Callable:
         """Creates a callback for the foreground window change
@@ -67,6 +73,7 @@ class WindowsEventHandler:
         def callback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime):
             global timer, last_executable
             if time.time() - timer <= 1:
+                self.__get_logger().info("WindowsEvent triggered but still on cooldown")
                 return
             try:
                 _, p = GetWindowThreadProcessId(hwnd)
@@ -74,11 +81,13 @@ class WindowsEventHandler:
                 exe = GetModuleFileNameEx(handle, 0)
                 exe = exe.split("\\")[-1]
                 if exe in os.getenv("EXE_LIST") and exe != last_executable:
-                    if self.configuration_manager.set_configuration_for_process(exe):
+                    process = exe.split('.')[0]
+                    if self.configuration_manager.set_configuration_for_process(process):
                         self.update_hotkeys()
                         last_executable = exe
                         timer = time.time()
+                        logging.info(f"WindowsEvent triggered and set configuration for {exe}")
             except Exception as e:
-                print(e)
+                self.__get_logger().warning(e)
 
         return callback

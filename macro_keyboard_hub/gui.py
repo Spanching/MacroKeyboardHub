@@ -76,7 +76,6 @@ class GUI:
         self.recording = True
         while True:
             event = keyboard.read_event(suppress=True)
-            print(event.name)
             if event.event_type == "down":
                 if event.name not in pressed:
                     key_list.append(event.name)
