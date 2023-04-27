@@ -74,17 +74,9 @@ class MacroKeyboard:
     def show_configuration_popup(name) -> None:
         """Shows a psg popup with the current configuration
             """
-        layout = [
-            [Psg.Text(f"Configuration changed to {name}", font="Arial", background_color="black")]
-        ]
-        window = Psg.Window("Macro Keyboard Hub", layout, use_default_focus=False, finalize=True, modal=True,
-                            no_titlebar=True, auto_close=True, auto_close_duration=1, background_color="black",
-                            element_padding=20, keep_on_top=True)
-        screen_width, screen_height = GetMonitorInfo(MonitorFromPoint((0, 0))).get("Work")[2:4]
-        win_width, win_height = window.size
-        x, y = screen_width - win_width - POPUP_PADDING, screen_height - win_height - POPUP_PADDING
-        window.move(x, y)
-        window.read()
+        if os.getenv("SHOW_POPUP"):
+            Psg.popup_auto_close(f"Configuration changed to {name}", font="Arial", background_color="black",
+                                 button_type=Psg.POPUP_BUTTONS_NO_BUTTONS, no_titlebar=True)
 
     def __observe(self) -> None:
         """Observes the current directory for changes, used to react to configuration changes made in the GUI

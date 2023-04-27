@@ -14,6 +14,7 @@ def __init_env() -> None:
         with open(".env", 'w') as env_file:
             env_file.writelines([
                 'USE_FOREGROUND_WINDOW_DETECTION = False\n',
+                'SHOW_POPUP = False\n',
                 'EXE_LIST = ["chrome.exe", "explorer.exe"]\n'
             ])
 
