@@ -26,7 +26,7 @@ class MacroKeyboard:
         self.popup_queue = queue.Queue(maxsize=2)
         self.update_hotkeys(init=True)
         self.__observe()
-        if os.getenv("USE_FOREGROUND_WINDOW_DETECTION"):
+        if os.getenv("USE_FOREGROUND_WINDOW_DETECTION", "False").lower() == "true":
             Thread(target=lambda: WindowsEventHandler(self.configuration_manager, self.update_hotkeys)).start()
         self.handle_queue()
         logging.info("MacroKeyboard initialized")
@@ -74,7 +74,7 @@ class MacroKeyboard:
     def show_configuration_popup(name) -> None:
         """Shows a psg popup with the current configuration
             """
-        if os.getenv("SHOW_POPUP"):
+        if os.getenv("SHOW_POPUP", "False").lower() == "true":
             Psg.popup_auto_close(f"Configuration changed to {name}", font="Arial", background_color="black",
                                  button_type=Psg.POPUP_BUTTONS_NO_BUTTONS, no_titlebar=True)
 
