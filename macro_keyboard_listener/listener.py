@@ -31,21 +31,9 @@ class KeyFunction:
     """Represents the Function of a Key
     """
 
-    def __init__(self, arg: str, function_type=FunctionType.MACRO, callback: Callable = None) -> None:
+    def __init__(self, arg: str, function_type=FunctionType.MACRO) -> None:
         self.arg = arg
         self.type = function_type
-        self.callback = callback
-
-    def get_function(self) -> Callable:
-        """Prepares a function callable for the function this represents
-        :return: Callable for the KeyFunction
-        """
-        if self.type == FunctionType.MACRO:
-            return lambda: keyboard.press_and_release(self.arg)
-        elif self.type == FunctionType.ABBREVIATION:
-            return lambda: keyboard.write(self.arg)
-        elif self.type == FunctionType.INTERNAL:
-            return self.callback
 
 
 class MacroKeyboard:
@@ -57,7 +45,6 @@ class MacroKeyboard:
         self.popup_queue = queue.Queue(maxsize=2)
         self.update_hotkeys(init=True)
         self.__observe()
-        os.getenv("USE_FOREGROUND_WINDOW_DETECTION")
         if os.getenv("USE_FOREGROUND_WINDOW_DETECTION"):
             Thread(target=lambda: WindowsEventHandler(self.configuration_manager, self.update_hotkeys)).start()
         self.handle_queue()
@@ -83,22 +70,30 @@ class MacroKeyboard:
             keyboard.remove_all_hotkeys()
         for key, arg in self.configuration_manager.get_configuration().keys.items():
             if arg.startswith(INTERNAL_FUNCTION):
-                def callback():
-                    if arg.endswith(PREV):
-                        self.configuration_manager.previous_configuration()
-                        self.update_hotkeys()
-                    elif arg.endswith(NEXT):
-                        self.configuration_manager.next_configuration()
-                        self.update_hotkeys()
 
-                function = KeyFunction(arg, FunctionType.INTERNAL, callback=callback)
+                function = KeyFunction(arg, FunctionType.INTERNAL)
             elif arg.startswith(ABBREVIATION):
                 function = KeyFunction(arg.split(':')[-1], function_type=FunctionType.ABBREVIATION)
             else:
                 function = KeyFunction(arg)
-            keyboard.add_hotkey(key, function.get_function(), suppress=True)
+            keyboard.add_hotkey(key, self.get_function_for_key_function(function), suppress=True)
         self.popup_queue.put(f"{self.configuration_manager.get_configuration().name}")
         logging.info("Hotkeys updated")
+
+    def get_function_for_key_function(self, key_function: KeyFunction):
+        if key_function.type == FunctionType.MACRO:
+            return lambda: keyboard.press_and_release(key_function.arg)
+        elif key_function.type == FunctionType.ABBREVIATION:
+            return lambda: keyboard.write(key_function.arg)
+        elif key_function.type == FunctionType.INTERNAL:
+            def callback():
+                if key_function.arg.endswith(PREV):
+                    self.configuration_manager.previous_configuration()
+                    self.update_hotkeys()
+                elif key_function.arg.endswith(NEXT):
+                    self.configuration_manager.next_configuration()
+                    self.update_hotkeys()
+            return callback
 
     @staticmethod
     def show_configuration_popup(name) -> None:

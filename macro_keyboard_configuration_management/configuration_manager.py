@@ -2,8 +2,6 @@ import json
 import os
 from typing import Dict, Callable, List
 
-from dotenv import load_dotenv
-
 from macro_keyboard_configuration_management.constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
 import logging
 
