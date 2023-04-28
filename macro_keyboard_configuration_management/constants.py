@@ -35,8 +35,8 @@ DEFAULT_CONFIG_KEYS = {
     'strg+f16': {"name": None, 'arg': 'strg+f16', 'function_type': 'MACRO'},
     'strg+f17': {"name": None, 'arg': 'strg+f17', 'function_type': 'MACRO'},
     'strg+f18': {"name": None, 'arg': 'strg+f18', 'function_type': 'MACRO'},
-    'strg+f19': {"name": None, 'arg': 'FKT_PREV', 'function_type': 'MACRO'},
-    'strg+f20': {"name": None, 'arg': 'FKT_NEXT', 'function_type': 'MACRO'},
+    'strg+f19': {"name": None, 'arg': 'FKT_PREV', 'function_type': 'INTERNAL'},
+    'strg+f20': {"name": None, 'arg': 'FKT_NEXT', 'function_type': 'INTERNAL'},
 }
 
 POPUP_PADDING = 20

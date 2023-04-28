@@ -93,15 +93,25 @@ class ConfigurationManager:
         self.configurations.clear()
         with open(DEFAULT_FILE_NAME, "r") as file:
             configs: Dict = json.load(file)
-            for configuration_name in configs.keys():
-                key_dict = {}
-                config = configs[configuration_name]
-                for key in config.keys():
-                    name, arg, function_type = config[key].values()
-                    key_dict[key] = KeyFunction(arg, FunctionType(function_type), name)
-                self.configurations.append(
-                    Configuration(name=configuration_name, keys=key_dict)
-                )
+            self.configurations = self.get_configuration_list_from_dict(configs)
+
+    @staticmethod
+    def get_configuration_list_from_dict(configuration_dict: Dict) -> List[Configuration]:
+        """Returns a list of configurations for a given dictionary
+        :param configuration_dict: dictionary of configurations
+        :return: list of Configurations
+        """
+        configurations = []
+        for configuration_name in configuration_dict.keys():
+            key_dict = {}
+            config = configuration_dict[configuration_name]
+            for key in config.keys():
+                name, arg, function_type = config[key].values()
+                key_dict[key] = KeyFunction(arg, FunctionType(function_type), name)
+            configurations.append(
+                Configuration(name=configuration_name, keys=key_dict)
+            )
+        return configurations
 
     def get_configuration(self) -> Configuration:
         """Returns the currently active configuration for this instance
@@ -165,7 +175,12 @@ class ConfigurationManager:
     def reset_current_config(self) -> None:
         """Resets the currently active configuration to the default function mapping
         """
-        self.configurations[self.configuration_index].keys = DEFAULT_CONFIG_KEYS
+        key_dict = {}
+        config = DEFAULT_CONFIG_KEYS
+        for key in config.keys():
+            name, arg, function_type = config[key].values()
+            key_dict[key] = KeyFunction(arg, FunctionType(function_type), name)
+        self.configurations[self.configuration_index].keys = key_dict
         self.__save_configurations()
 
     def __save_configurations(self) -> None:
