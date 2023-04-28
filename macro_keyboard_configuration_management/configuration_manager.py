@@ -69,6 +69,7 @@ class ConfigurationManager:
         """Toggles configuration lock
         """
         self.locked_configuration = not self.locked_configuration
+        logging.info(f"Configuration Lock set to {self.locked_configuration}")
 
     def set_configuration_for_process(self, process: str) -> bool:
         """Sets configuration when foreground executable changes
