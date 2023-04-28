@@ -70,7 +70,7 @@ class WindowsEventHandler:
         :return: Callable callback that changes configuration automatically
         """
 
-        def callback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime):
+        def callback(h_win_event_hook, event, hwnd, id_object, id_child, dw_event_thread, dwms_event_time):
             global timer, last_executable
             if time.time() - timer <= 1:
                 self.__get_logger().info("WindowsEvent triggered but still on cooldown")
