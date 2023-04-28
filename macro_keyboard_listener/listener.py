@@ -23,7 +23,7 @@ class MacroKeyboard:
         """
         self.recording = False
         self.configuration_manager = ConfigurationManager()
-        self.popup_queue = queue.Queue(maxsize=2)
+        self.popup_queue = queue.LifoQueue()
         self.update_hotkeys(init=True)
         self.__observe()
         if os.getenv("USE_FOREGROUND_WINDOW_DETECTION", "False").lower() == "true":
@@ -36,10 +36,13 @@ class MacroKeyboard:
         :return:
         """
         while True:
-            while self.popup_queue.full():
-                self.popup_queue.get()
             item = self.popup_queue.get()
-            self.show_configuration_popup(item)
+            if type(item) is str:
+                self.__show_configuration_popup(item)
+            elif type(item) is bool:
+                self.__show_configuration_lock_popup(item)
+            with self.popup_queue.mutex:
+                self.popup_queue.queue.clear()
 
     def update_hotkeys(self, init=False, popup=True) -> None:
         """Update the hotkeys for the keyboard package, used every time the configuration changes
@@ -77,14 +80,22 @@ class MacroKeyboard:
                     self.configuration_manager.next_configuration()
                     self.update_hotkeys()
                 elif key_function.arg.endswith(LOCK):
-                    self.configuration_manager.toggle_configuration_lock()
+                    locked = self.configuration_manager.toggle_configuration_lock()
+                    self.popup_queue.put(locked)
             return callback
 
     @staticmethod
-    def show_configuration_popup(name) -> None:
+    def __show_configuration_popup(name) -> None:
         """Shows a psg popup with the current configuration
             """
         Psg.popup_auto_close(f"Configuration changed to {name}", font="Arial", background_color="black",
+                             button_type=Psg.POPUP_BUTTONS_NO_BUTTONS, no_titlebar=True, auto_close_duration=1)
+
+    def __show_configuration_lock_popup(self, locked) -> None:
+        """Shows a psg popup with the current configuration
+            """
+        Psg.popup_auto_close(f'Configuration {self.configuration_manager.get_configuration().name} is now '
+                             f'{"locked" if locked else "unlocked"}', font="Arial", background_color="black",
                              button_type=Psg.POPUP_BUTTONS_NO_BUTTONS, no_titlebar=True, auto_close_duration=1)
 
     def __observe(self) -> None:

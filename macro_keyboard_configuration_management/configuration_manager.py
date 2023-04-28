@@ -65,11 +65,13 @@ class ConfigurationManager:
         self.__update_config()
         logging.info("Configuration Manager initialized")
 
-    def toggle_configuration_lock(self) -> None:
+    def toggle_configuration_lock(self) -> bool:
         """Toggles configuration lock
+        :return: the new value of configuration lock
         """
         self.locked_configuration = not self.locked_configuration
         logging.info(f"Configuration Lock set to {self.locked_configuration}")
+        return self.locked_configuration
 
     def set_configuration_for_process(self, process: str) -> bool:
         """Sets configuration when foreground executable changes
