@@ -1,12 +1,11 @@
 import PySimpleGUI as Psg
 import keyboard
-import re
 
 from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager, KeyFunction, \
     FunctionType
 from macro_keyboard_configuration_management.constants import ABBREVIATION, BUTTON, \
     INTERNAL_FUNCTION, CONFIG, RESET, ADD, DELETE, PREV, NEXT, \
-    CANCEL, EDIT
+    CANCEL, EDIT, LOCK
 
 
 class GUI:
@@ -54,11 +53,11 @@ class GUI:
         :param event: the psg event that happened last
         """
         key = event.split("_")[-1]
-        popup_window = self.__create_popup(key)
+        popup_window = self.__create_edit_popup(key)
         while True:
             popup_event, _ = popup_window.read()
             if popup_event.startswith(INTERNAL_FUNCTION):
-                if popup_event.endswith(PREV) or popup_event.endswith(NEXT):
+                if popup_event.endswith(PREV) or popup_event.endswith(NEXT) or popup_event.endswith(LOCK):
                     function = KeyFunction(popup_event, FunctionType.INTERNAL)
                     self.configuration_manager.update_key(key, function)
                     self.__close_popup_and_update_buttons(popup_window)
@@ -151,7 +150,7 @@ class GUI:
         else:
             popup_window.close()
 
-    def __create_popup(self, key: str) -> Psg.Window:
+    def __create_edit_popup(self, key: str) -> Psg.Window:
         """Create the edit popup window for a key
         :param key: the key which was pressed to trigger the popup
         :return: psg window for the popup
@@ -163,7 +162,8 @@ class GUI:
             [Psg.Button("Abbreviation", key=f"{INTERNAL_FUNCTION}_{ABBREVIATION}",
                         expand_x=True)],
             [Psg.Button("Prev", key=f"{INTERNAL_FUNCTION}_{PREV}", expand_x=True),
-             Psg.Button("Next", key=f"{INTERNAL_FUNCTION}_{NEXT}", expand_x=True)],
+             Psg.Button("Next", key=f"{INTERNAL_FUNCTION}_{NEXT}", expand_x=True),
+             Psg.Button("Lock", key=f"{INTERNAL_FUNCTION}_{LOCK}", expand_x=True)],
             [Psg.Button("Cancel", key=f"{INTERNAL_FUNCTION}_{CANCEL}", expand_x=True)]
         ]
         popup_window = Psg.Window("Change Button Function", layout=popup_layout, modal=True, finalize=True,

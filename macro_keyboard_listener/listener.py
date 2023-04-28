@@ -2,6 +2,7 @@ import logging
 import os
 import queue
 from threading import Thread
+from typing import Callable
 
 import keyboard
 import sys
@@ -11,10 +12,9 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager, FunctionType, \
     KeyFunction
-from macro_keyboard_configuration_management.constants import MACRO_KEYBOARD_FILE_TYPE, NEXT, PREV, POPUP_PADDING
+from macro_keyboard_configuration_management.constants import MACRO_KEYBOARD_FILE_TYPE, NEXT, PREV, LOCK
 from macro_keyboard_listener.windows_event_handler import WindowsEventHandler
 import PySimpleGUI as Psg
-from win32api import GetMonitorInfo, MonitorFromPoint
 
 
 class MacroKeyboard:
@@ -32,6 +32,9 @@ class MacroKeyboard:
         logging.info("MacroKeyboard initialized")
 
     def handle_queue(self):
+        """Runs forever and handles the queue for popups
+        :return:
+        """
         while True:
             while self.popup_queue.full():
                 self.popup_queue.get()
@@ -51,12 +54,16 @@ class MacroKeyboard:
         if not init:
             keyboard.remove_all_hotkeys()
         for key, function in self.configuration_manager.get_configuration().keys.items():
-            keyboard.add_hotkey(key, self.get_function_for_key_function(function), suppress=True)
+            keyboard.add_hotkey(key, self.__get_function_for_key_function(function), suppress=True)
         if popup:
             self.popup_queue.put(f"{self.configuration_manager.get_configuration().name}")
         logging.info("Hotkeys updated")
 
-    def get_function_for_key_function(self, key_function: KeyFunction):
+    def __get_function_for_key_function(self, key_function: KeyFunction) -> Callable:
+        """returns callable to run for a key
+        :param key_function: the KeyFunction we want to create the callable for
+        :return: Callable
+        """
         if key_function.function_type == FunctionType.MACRO:
             return lambda: keyboard.press_and_release(key_function.arg)
         elif key_function.function_type == FunctionType.ABBREVIATION:
@@ -69,7 +76,8 @@ class MacroKeyboard:
                 elif key_function.arg.endswith(NEXT):
                     self.configuration_manager.next_configuration()
                     self.update_hotkeys()
-
+                elif key_function.arg.endswith(LOCK):
+                    self.configuration_manager.toggle_configuration_lock()
             return callback
 
     @staticmethod

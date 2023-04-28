@@ -1,7 +1,7 @@
 import json
 import os
 from enum import Enum
-from typing import Dict, Callable, List
+from typing import Dict, List
 
 from macro_keyboard_configuration_management.constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
 import logging
@@ -24,7 +24,10 @@ class KeyFunction:
         self.function_type = function_type
         self.name = name
 
-    def get_name(self):
+    def get_name(self) -> str:
+        """Returns the displayable name for the KeyFunction
+        :return: str, the string representation for the KeyFunction
+        """
         if self.function_type == FunctionType.ABBREVIATION:
             return self.name
         return self.arg.replace('+', ' + ')
@@ -56,15 +59,24 @@ class ConfigurationManager:
         """Handles persistence of Configurations and changes, used by GUI and Listener without synchronization of
         indices, but with synchronized configurations
         """
+        self.locked_configuration = False
         self.configurations: List[Configuration] = []
         self.configuration_index = 0
         self.__update_config()
         logging.info("Configuration Manager initialized")
 
+    def toggle_configuration_lock(self) -> None:
+        """Toggles configuration lock
+        """
+        self.locked_configuration = not self.locked_configuration
+
     def set_configuration_for_process(self, process: str) -> bool:
         """Sets configuration when foreground executable changes
         :param process: the name of the process that is now in the foreground
         """
+        if self.locked_configuration:
+            logging.info(f"No configuration set for process {process} as configuration is locked")
+            return False
         for index, config in enumerate(self.configurations):
             if config.name == process:
                 if self.configuration_index != index:
@@ -98,21 +110,19 @@ class ConfigurationManager:
 
     def next_configuration(self) -> None:
         """Increments the index for the configurations
-        :param popup: if to display a popup (only wanted for changes from the keyboard itself)
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index + 1) % len(self.configurations)
             logging.info(f"Switching to next configuration at index {self.configuration_index} "
-                                     f"with name {self.configurations[self.configuration_index].name}")
+                         f"with name {self.configurations[self.configuration_index].name}")
 
     def previous_configuration(self) -> None:
         """Decrements the index for the configurations
-        :param popup: if to display a popup (only wanted for changes from the keyboard itself)
         """
         if len(self.configurations) > 1:
             self.configuration_index = (self.configuration_index - 1) % len(self.configurations)
             logging.info(f"Switching to previous configuration at index {self.configuration_index} "
-                                     f"with name {self.configurations[self.configuration_index].name}")
+                         f"with name {self.configurations[self.configuration_index].name}")
 
     # GUI Functions
     def add_new_configuration(self, name: str) -> None:
