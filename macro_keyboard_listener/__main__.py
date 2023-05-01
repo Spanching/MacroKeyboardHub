@@ -24,4 +24,7 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s  %(levelname)s:%(message)s', filemode='w', filename=LOGGING_FILE_NAME,
                         encoding='utf-8', level=logging.INFO)
     logging.info("Environment file loaded")
-    MacroKeyboard()
+    try:
+        MacroKeyboard()
+    except Exception as e:
+        logging.warning(e)

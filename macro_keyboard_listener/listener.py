@@ -122,6 +122,7 @@ class KeyboardEventHandler(FileSystemEventHandler):
         """Triggered when a file or directory in this directory was modified
         :param event: the Modification Event triggered
         """
+        logging.info("Modification detected")
         if time.time() - self.last_updated <= 1:
             logging.info("Modification detected but still on cooldown")
             return

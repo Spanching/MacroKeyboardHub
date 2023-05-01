@@ -1,6 +1,9 @@
 import json
 import os
+import time
 from enum import Enum
+from json import JSONDecodeError
+from os.path import isfile
 from typing import Dict, List
 
 from macro_keyboard_configuration_management.constants import DEFAULT_FILE_NAME, DEFAULT_CONFIG_KEYS
@@ -64,6 +67,7 @@ class ConfigurationManager:
         self.configuration_index = 0
         self.__update_config()
         logging.info("Configuration Manager initialized")
+        self.read_error_counter = 0
 
     def toggle_configuration_lock(self) -> bool:
         """Toggles configuration lock
@@ -92,10 +96,20 @@ class ConfigurationManager:
     def read_configuration(self) -> None:
         """Reads the configuration file and updates the configurations list
         """
-        self.configurations.clear()
+        while not isfile(DEFAULT_FILE_NAME) and os.access(DEFAULT_FILE_NAME, os.R_OK):
+            pass
         with open(DEFAULT_FILE_NAME, "r") as file:
-            configs: Dict = json.load(file)
-            self.configurations = self.get_configuration_list_from_dict(configs)
+            try:
+                configs: Dict = json.load(file)
+                self.configurations.clear()
+                self.configurations = self.get_configuration_list_from_dict(configs)
+                self.read_error_counter = 0
+            except JSONDecodeError as jde:
+                logging.warning(jde)
+                self.read_error_counter = self.read_error_counter + 1
+                if self.read_error_counter < 3:
+                    time.sleep(0.1)
+                    self.read_configuration()
 
     @staticmethod
     def get_configuration_list_from_dict(configuration_dict: Dict) -> List[Configuration]:

@@ -146,7 +146,8 @@ class GUI:
                 and abbreviation != '':
             function = KeyFunction(abbreviation, FunctionType.ABBREVIATION, name=name)
             self.configuration_manager.update_key(key, function)
-            self.__close_popup_and_update_buttons(popup_window)
+            self.window[f"{BUTTON}_{key}"](function.get_name())
+            popup_window.close()
         else:
             popup_window.close()
 
