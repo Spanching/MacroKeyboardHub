@@ -22,7 +22,7 @@ if __name__ == "__main__":
     __init_env()
     load_dotenv()
     logging.basicConfig(format='%(asctime)s  %(levelname)s:%(message)s', filemode='w', filename=LOGGING_FILE_NAME,
-                        encoding='utf-8', level=logging.INFO)
+                        encoding='utf-8', level=logging.DEBUG)
     logging.info("Environment file loaded")
     try:
         MacroKeyboard()

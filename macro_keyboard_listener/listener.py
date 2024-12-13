@@ -101,7 +101,7 @@ class MacroKeyboard:
     def __observe(self) -> None:
         """Observes the current directory for changes, used to react to configuration changes made in the GUI
         """
-        path = sys.argv[1] if len(sys.argv) > 1 else '.'
+        path = sys.argv[1] if len(sys.argv) > 1 else 'configuration'
         event_handler = KeyboardEventHandler(self)
         observer = Observer()
         observer.schedule(event_handler, path, recursive=False)
@@ -122,7 +122,7 @@ class KeyboardEventHandler(FileSystemEventHandler):
         """Triggered when a file or directory in this directory was modified
         :param event: the Modification Event triggered
         """
-        logging.info("Modification detected")
+        logging.debug("Modification detected")
         if time.time() - self.last_updated <= 1:
             logging.info("Modification detected but still on cooldown")
             return

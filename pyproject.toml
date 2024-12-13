@@ -12,6 +12,8 @@ keyboard = "^0.13.5"
 watchdog = "^3.0.0"
 PySimpleGUI = "^4.60.4"
 pywin32 = "^306"
+pillow = "^11.0.0"
+customtkinter = "^5.2.2"
 
 
 [build-system]

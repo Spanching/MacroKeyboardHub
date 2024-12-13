@@ -7,3 +7,5 @@ dist/
 macro_keyboard_listener/fernet_key.key
 macro_keyboard_listener/*.log
 /macro_keyboard_listener/gui.exe
+
+*.log

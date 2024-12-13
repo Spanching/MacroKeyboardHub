@@ -81,16 +81,21 @@ class ConfigurationManager:
         """Sets configuration when foreground executable changes
         :param process: the name of the process that is now in the foreground
         """
+        logging.debug(f"Setting Configuration with process {process}")
         if self.locked_configuration:
             logging.info(f"No configuration set for process {process} as configuration is locked")
             return False
         for index, config in enumerate(self.configurations):
             if config.name == process:
                 if self.configuration_index != index:
+                    logging.debug(f"Setting configuration from {self.configurations[self.configuration_index].name} to {self.configurations[index].name}")
                     self.configuration_index = index
-                    logging.info(f"Set configuration for process {process}")
+                    logging.info(f"Successfully set configuration for process {process}")
                     return True
-        logging.info(f"No configuration set for process {process}")
+                else:
+                    logging.debug(f"No configuration set for process {process} as it is already set")
+                    return False
+        logging.info(f"No configuration set for process {process} because there was none available")
         return False
 
     def read_configuration(self) -> None:
@@ -156,12 +161,13 @@ class ConfigurationManager:
         """Adds a new configuration with the default function mapping
         :param name: the name for the new configuration
         """
+        logging.debug(f"Adding configuration {name}")
         self.configurations.append(
             Configuration(name=name, keys=self.configurations[self.configuration_index].keys)
         )
         self.configuration_index = len(self.configurations) - 1
         self.__save_configurations()
-        logging.info(f"Adding configuration {name}")
+        logging.info(f"Added configuration {name}")
 
     def delete_current_configuration(self) -> None:
         """Deletes the currently active Configuration

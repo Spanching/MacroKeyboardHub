@@ -5,7 +5,7 @@ import os
 import time
 
 from win32api import OpenProcess
-from win32process import GetWindowThreadProcessId, GetModuleFileNameEx
+from win32process import GetWindowThreadProcessId, GetModuleFileNameEx, CreateProcess
 from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager
 from typing import Callable
 
@@ -80,14 +80,21 @@ class WindowsEventHandler:
                 handle = OpenProcess(0x0410, False, p)
                 exe = GetModuleFileNameEx(handle, 0)
                 exe = exe.split("\\")[-1]
+                if exe == "Code.exe" or exe == "chrome.exe":
+                    pass
                 if exe in os.getenv("EXE_LIST") and exe != last_executable:
-                    process = exe.split('.')[0]
-                    if self.configuration_manager.set_configuration_for_process(process):
-                        self.update_hotkeys(popup=False)
-                        last_executable = exe
-                        timer = time.time()
-                        logging.info(f"WindowsEvent triggered and set configuration for {exe}")
+                    self.set_configuration(exe)
+                elif exe not in os.getenv("EXE_LIST"):
+                    self.set_configuration("default.exe")
             except Exception as e:
                 self.__get_logger().warning(e)
-
         return callback
+    
+    def set_configuration(self, exe):
+        process = exe.split('.')[0]
+        if self.configuration_manager.set_configuration_for_process(process):
+            self.update_hotkeys(popup=False)
+            last_executable = exe
+            timer = time.time()
+            logging.info(f"WindowsEvent triggered and set configuration for {exe}")
+

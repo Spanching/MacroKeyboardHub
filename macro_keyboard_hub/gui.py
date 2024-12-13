@@ -1,12 +1,8 @@
-import PySimpleGUI as Psg
+import customtkinter as ctk
+from PIL import Image
 import keyboard
-
-from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager, KeyFunction, \
-    FunctionType
-from macro_keyboard_configuration_management.constants import ABBREVIATION, BUTTON, \
-    INTERNAL_FUNCTION, CONFIG, RESET, ADD, DELETE, PREV, NEXT, \
-    CANCEL, EDIT, LOCK
-
+from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager, KeyFunction, FunctionType
+from macro_keyboard_configuration_management.constants import ABBREVIATION, BUTTON, INTERNAL_FUNCTION, CONFIG, RESET, ADD, DELETE, PREV, NEXT, CANCEL, EDIT, LOCK
 
 class GUI:
     def __init__(self) -> None:
@@ -14,102 +10,108 @@ class GUI:
         Initializes the GUI and creates the layout from the configuration manager
         """
         self.recording = False
-        Psg.theme("Dark Grey 15")
         self.configuration_manager = ConfigurationManager()
 
-        button_lists = [[], [], [], []]
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("dark-blue")
+
+        self.root = ctk.CTk()
+        self.root.geometry("700x500")
+        self.root.title("Macro Keyboard Hub")
+
+        self.create_widgets()
+        self.update_buttons()
+
+    def create_widgets(self):
+        self.config_frame = ctk.CTkFrame(self.root)
+        self.config_frame.pack(pady=10, padx=10, fill=ctk.X)
+
+        self.prev_button = self.create_icon_button("icons/arrow_left.png", self.handle_prev_config)
+        self.prev_button.pack(side=ctk.LEFT, padx=5)
+
+        self.config_label = ctk.CTkLabel(self.config_frame, text=self.configuration_manager.get_configuration().name, font=('Helvetica', 20))
+        self.config_label.pack(side=ctk.LEFT, expand=True, fill=ctk.X)
+
+        self.add_button = self.create_icon_button("icons/plus_icon.png", self.handle_add_config)
+        self.add_button.pack(side=ctk.RIGHT, padx=5)
+
+        self.delete_button = self.create_icon_button("icons/delete_icon.png", self.handle_delete_config)
+        self.delete_button.pack(side=ctk.RIGHT, padx=5)
+
+        self.reset_button = self.create_icon_button("icons/reset_icon.png", self.handle_reset_config)
+        self.reset_button.pack(side=ctk.RIGHT, padx=5)
+
+        self.add_button = self.create_icon_button("icons/arrow_right.png", self.handle_next_config)
+        self.add_button.pack(side=ctk.RIGHT, padx=5)
+
+        self.keyboard_frame = ctk.CTkFrame(self.root, corner_radius=10)
+        self.keyboard_frame.pack(padx = 10, pady = 10, fill=ctk.BOTH, expand=True)
+
+        self.button_frames = [ctk.CTkFrame(self.keyboard_frame, fg_color="transparent") for _ in range(4)]
+        for frame in self.button_frames:
+            frame.pack(fill=ctk.BOTH, expand=True)
+
+    def create_icon_button(self, image_path, command):
+        image = Image.open(image_path)
+        image = image.resize((24, 24))
+        photo = ctk.CTkImage(image, size=(24,24))
+        button = ctk.CTkButton(self.config_frame, image=photo, command=command, text="", width=24, height=24, corner_radius=10)
+        return button
+
+    def update_buttons(self):
+        for frame in self.button_frames:
+            for widget in frame.winfo_children():
+                widget.destroy()
+
         function: KeyFunction
         for index, (key, function) in enumerate(self.configuration_manager.get_configuration().keys.items()):
-            button_lists[index // 4].append(
-                Psg.Button(function.get_name(), key=f"{BUTTON}_{key}", size=(12, 5)))
-        layout = [
-            [Psg.Button("<", key=f"{PREV}_{CONFIG}"),
-             Psg.Text(self.configuration_manager.get_configuration().name, key="NAME_CONFIG", expand_x=True,
-                      justification="center"),
-             Psg.Button(">", key=f"{NEXT}_{CONFIG}"), Psg.Button("+", key="ADD_CONFIG"),
-             Psg.Button("Delete", key=f"{DELETE}_{CONFIG}"),
-             Psg.Button("Reset", key=f"{RESET}_{CONFIG}")],
-            *button_lists
-        ]
-        self.window = Psg.Window("Macro Keyboard Hub", layout, use_default_focus=False)
+            button = ctk.CTkButton(self.button_frames[index // 4], text=function.get_name(), command=lambda k=key: self.handle_button_event(k), 
+                                   corner_radius=10, fg_color="#2E2E2E", hover_color="#3E3E3E", height=50)
+            # button.grid(column=index%4, row=index//4, padx=5, pady=5)
+            button.pack(side=ctk.LEFT, padx=5, pady=5, fill=ctk.BOTH, expand=True)
 
     def start(self) -> None:
         """Starts the GUI event loop
         """
-        while True:
-            event, _ = self.window.read()
-            if event is not None:
-                if event.endswith(CONFIG):
-                    self.__handle_config_event(event)
-                elif event.startswith(BUTTON):
-                    self.__handle_button_event(event)
-            if event == Psg.WIN_CLOSED:
-                break
+        self.root.mainloop()
 
-        self.window.close()
-
-    def __handle_button_event(self, event: str) -> None:
+    def handle_button_event(self, key: str) -> None:
         """Handles the button presses for the keys of the MacroKeyboard
-        :param event: the psg event that happened last
+        :param key: the key for which the button was pressed
         """
-        key = event.split("_")[-1]
-        popup_window = self.__create_edit_popup(key)
-        while True:
-            popup_event, _ = popup_window.read()
-            if popup_event.startswith(INTERNAL_FUNCTION):
-                if popup_event.endswith(PREV) or popup_event.endswith(NEXT) or popup_event.endswith(LOCK):
-                    function = KeyFunction(popup_event, FunctionType.INTERNAL)
-                    self.configuration_manager.update_key(key, function)
-                    self.__close_popup_and_update_buttons(popup_window)
-                    break
-                elif popup_event.endswith(ABBREVIATION):
-                    self.__create_abbreviation(key, popup_window)
-                    break
-                elif popup_event.endswith(CANCEL):
-                    popup_window.close()
-                    break
-                elif popup_event.endswith(EDIT):
-                    self.__record_macro(self.window, key)
-                    self.__close_popup_and_update_buttons(popup_window)
-                    break
-            else:
-                popup_window.close()
-                break
+        popup_window = self.create_edit_popup(key)
+        self.root.wait_visibility(popup_window)
+        self.root.wait_window(popup_window)
+        self.update_buttons()
 
-    def __handle_config_event(self, event: str) -> None:
-        """Handles configuration events for adding, resetting, deletion of a configuration
-        :param event: the psg event that happened last
-        :return:
-        """
-        if event.startswith(RESET):
-            self.configuration_manager.reset_current_config()
-        elif event.startswith(ADD):
-            config_name = Psg.popup_get_text("Input the name of the new configuration.")
-            if config_name is not None:
-                self.configuration_manager.add_new_configuration(config_name)
-        elif event.startswith(DELETE):
-            self.configuration_manager.delete_current_configuration()
-        elif event.startswith(PREV):
-            self.configuration_manager.previous_configuration()
-        elif event.startswith(NEXT):
-            self.configuration_manager.next_configuration()
-        self.__update_configuration_name_and_buttons()
+    def handle_prev_config(self):
+        self.configuration_manager.previous_configuration()
+        self.update_configuration_name_and_buttons()
 
-    def __update_config_name(self) -> None:
-        """Update the name of the configuration on the top of the window
-        """
-        self.window["NAME_CONFIG"](self.configuration_manager.get_configuration().name)
+    def handle_next_config(self):
+        self.configuration_manager.next_configuration()
+        self.update_configuration_name_and_buttons()
 
-    def __update_buttons(self) -> None:
-        """Update the text on the Buttons
-        """
-        function: KeyFunction
-        for key, function in self.configuration_manager.get_configuration().keys.items():
-            self.window[f"{BUTTON}_{key}"](function.get_name())
+    def handle_add_config(self):
+        config_name = ctk.CTkInputDialog(text="Input the name of the new configuration.", title="Input").get_input()
+        if config_name:
+            self.configuration_manager.add_new_configuration(config_name)
+            self.update_configuration_name_and_buttons()
 
-    def __record_macro(self, window: Psg.Window, key: str) -> None:
+    def handle_delete_config(self):
+        self.configuration_manager.delete_current_configuration()
+        self.update_configuration_name_and_buttons()
+
+    def handle_reset_config(self):
+        self.configuration_manager.reset_current_config()
+        self.update_configuration_name_and_buttons()
+
+    def update_configuration_name_and_buttons(self):
+        self.config_label.configure(text=self.configuration_manager.get_configuration().name)
+        self.update_buttons()
+
+    def record_macro(self, key: str) -> None:
         """Records a macro that will be set as function for the key the user is currently editing
-        :param window: the psg window that contains the Buttons
         :param key: the key for which the macro should be set
         """
         def record() -> str:
@@ -132,54 +134,81 @@ class GUI:
                     return arg
         recording = record()
         function = KeyFunction(recording, FunctionType.MACRO)
-        window[f"{BUTTON}_{key}"](function.get_name())
         self.configuration_manager.update_key(key, function)
 
-    def __create_abbreviation(self, key: str, popup_window: Psg.Window) -> None:
-        """Handles the creation of an Abbreviation for a key
-        :param key: the key that will hold this abbreviation
-        :param popup_window: the window that handles editing the function for the pressed key
-        """
-        name = Psg.popup_get_text("Add Abbreviation Name", keep_on_top=True, no_titlebar=True)
-        abbreviation = Psg.popup_get_text("Add Abbreviation", keep_on_top=True, no_titlebar=True)
-        if name is not None and name != '' and abbreviation is not None \
-                and abbreviation != '':
-            function = KeyFunction(abbreviation, FunctionType.ABBREVIATION, name=name)
-            self.configuration_manager.update_key(key, function)
-            self.window[f"{BUTTON}_{key}"](function.get_name())
-            popup_window.close()
-        else:
-            popup_window.close()
-
-    def __create_edit_popup(self, key: str) -> Psg.Window:
+    def create_edit_popup(self, key: str) -> ctk.CTkToplevel:
         """Create the edit popup window for a key
         :param key: the key which was pressed to trigger the popup
-        :return: psg window for the popup
+        :return: ctk.CTkToplevel window for the popup
         """
-        popup_layout = [
-            [Psg.Text("Change Button Function:")],
-            [Psg.Text(self.configuration_manager.get_key_function(key).get_name(), expand_x=True),
-             Psg.Button("Edit", key=f"{INTERNAL_FUNCTION}_{EDIT}", size=(6, 1))],
-            [Psg.Button("Abbreviation", key=f"{INTERNAL_FUNCTION}_{ABBREVIATION}",
-                        expand_x=True)],
-            [Psg.Button("Prev", key=f"{INTERNAL_FUNCTION}_{PREV}", expand_x=True),
-             Psg.Button("Next", key=f"{INTERNAL_FUNCTION}_{NEXT}", expand_x=True),
-             Psg.Button("Lock", key=f"{INTERNAL_FUNCTION}_{LOCK}", expand_x=True)],
-            [Psg.Button("Cancel", key=f"{INTERNAL_FUNCTION}_{CANCEL}", expand_x=True)]
-        ]
-        popup_window = Psg.Window("Change Button Function", layout=popup_layout, modal=True, finalize=True,
-                                  grab_anywhere=True, keep_on_top=True, no_titlebar=True)
+        popup_window = ctk.CTkToplevel(self.root)
+        popup_window.title("Change Button Function")
+
+        # Calculate the center position of the main window
+        self.root.update_idletasks()
+        x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        popup_width = 300  # Set the width of the popup window
+        popup_height = 200  # Set the height of the popup window
+        popup_x = x + (width // 2) - (popup_width // 2)
+        popup_y = y + (height // 2) - (popup_height // 2)
+
+        # Set the position of the popup window
+        popup_window.geometry(f"{popup_width}x{popup_height}+{popup_x}+{popup_y}")
+
+        ctk.CTkLabel(popup_window, text="Change Button Function:").pack(pady=10)
+
+        current_function_label = ctk.CTkLabel(popup_window, text=self.configuration_manager.get_key_function(key).get_name())
+        current_function_label.pack(pady=5)
+
+        edit_button = ctk.CTkButton(popup_window, text="Edit", command=lambda: self.handle_edit(key, popup_window), width=100)
+        edit_button.pack(pady=5)
+
+        abbreviation_button = ctk.CTkButton(popup_window, text="Abbreviation", command=lambda: self.create_abbreviation(key, popup_window), width=100)
+        abbreviation_button.pack(pady=5)
+
+        prev_button = ctk.CTkButton(popup_window, text="Prev", command=lambda: self.handle_internal_function(key, PREV, popup_window), width=100)
+        prev_button.pack(side=ctk.LEFT, padx=5, pady=5)
+
+        next_button = ctk.CTkButton(popup_window, text="Next", command=lambda: self.handle_internal_function(key, NEXT, popup_window), width=100)
+        next_button.pack(side=ctk.LEFT, padx=5, pady=5)
+
+        lock_button = ctk.CTkButton(popup_window, text="Lock", command=lambda: self.handle_internal_function(key, LOCK, popup_window), width=100)
+        lock_button.pack(side=ctk.LEFT, padx=5, pady=5)
+
+        cancel_button = ctk.CTkButton(popup_window, text="Cancel", command=popup_window.destroy, width=100)
+        cancel_button.pack(pady=5)
+
+        # Focus the popup window
+        popup_window.after(0, popup_window.lift)
+
+
         return popup_window
 
-    def __close_popup_and_update_buttons(self, popup_window: Psg.Window) -> None:
-        """Helper for closing the popup and updating all the buttons with their function
-        :param popup_window: the window for the editing popup that should be closed
-        """
-        popup_window.close()
-        self.__update_buttons()
+    def handle_edit(self, key: str, popup_window: ctk.CTkToplevel):
+        self.record_macro(key)
+        popup_window.destroy()
+        self.update_buttons()
 
-    def __update_configuration_name_and_buttons(self) -> None:
-        """Updates configuration name and buttons
-        """
-        self.__update_config_name()
-        self.__update_buttons()
+    def handle_internal_function(self, key: str, function_type: str, popup_window: ctk.CTkToplevel):
+        function = KeyFunction(function_type, FunctionType.INTERNAL)
+        self.configuration_manager.update_key(key, function)
+        popup_window.destroy()
+        self.update_buttons()
+
+    def create_abbreviation(self, key: str, popup_window: ctk.CTkToplevel):
+        name = ctk.CTkInputDialog(text="Add Abbreviation Name", title="Input").get_input()
+        abbreviation = ctk.CTkInputDialog(text="Add Abbreviation", title="Input").get_input()
+        if name and abbreviation:
+            function = KeyFunction(abbreviation, FunctionType.ABBREVIATION, name=name)
+            self.configuration_manager.update_key(key, function)
+            popup_window.destroy()
+            self.update_buttons()
+        else:
+            popup_window.destroy()
+
+if __name__ == "__main__":
+    gui = GUI()
+    gui.start()
