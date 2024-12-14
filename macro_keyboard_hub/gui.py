@@ -3,6 +3,9 @@ from PIL import Image
 import keyboard
 from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager, KeyFunction, FunctionType
 from macro_keyboard_configuration_management.constants import ABBREVIATION, BUTTON, INTERNAL_FUNCTION, CONFIG, RESET, ADD, DELETE, PREV, NEXT, CANCEL, EDIT, LOCK
+from macro_keyboard_hub.confirmation_dialog import ConfirmationDialog
+from macro_keyboard_hub.popup import Popup
+from macro_keyboard_hub.titlebar import TitleBar
 
 class GUI:
     def __init__(self) -> None:
@@ -17,7 +20,8 @@ class GUI:
 
         self.root = ctk.CTk()
         self.root.geometry("700x500")
-        self.root.title("Macro Keyboard Hub")
+        titlebar = TitleBar(self.root, title="Custom MacroKeyboard Hub")
+        titlebar.pack(fill="both")
 
         self.create_widgets()
         self.update_buttons()
@@ -99,8 +103,9 @@ class GUI:
             self.update_configuration_name_and_buttons()
 
     def handle_delete_config(self):
-        self.configuration_manager.delete_current_configuration()
-        self.update_configuration_name_and_buttons()
+        if ConfirmationDialog(self.root, 250, 150, title="", text=f"Are you sure you want to\ndelete configuration {self.configuration_manager.get_configuration().name}?", font=("Helvetica", 15)).get_confirmation():
+            self.configuration_manager.delete_current_configuration()
+            self.update_configuration_name_and_buttons()
 
     def handle_reset_config(self):
         self.configuration_manager.reset_current_config()
@@ -141,49 +146,34 @@ class GUI:
         :param key: the key which was pressed to trigger the popup
         :return: ctk.CTkToplevel window for the popup
         """
-        popup_window = ctk.CTkToplevel(self.root)
-        popup_window.title("Change Button Function")
-
-        # Calculate the center position of the main window
-        self.root.update_idletasks()
-        x = self.root.winfo_x()
-        y = self.root.winfo_y()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        popup_width = 300  # Set the width of the popup window
-        popup_height = 200  # Set the height of the popup window
-        popup_x = x + (width // 2) - (popup_width // 2)
-        popup_y = y + (height // 2) - (popup_height // 2)
-
-        # Set the position of the popup window
-        popup_window.geometry(f"{popup_width}x{popup_height}+{popup_x}+{popup_y}")
-
-        ctk.CTkLabel(popup_window, text="Change Button Function:").pack(pady=10)
-
-        current_function_label = ctk.CTkLabel(popup_window, text=self.configuration_manager.get_key_function(key).get_name())
+        popup_window = Popup(self.root, 300, 250)
+        
+        title_label = ctk.CTkLabel(popup_window, text="Change Button Function:")
+        title_label.pack(pady=5)
+        
+        current_function_label = ctk.CTkLabel(popup_window, font=("Helvetica", 20), text=self.configuration_manager.get_key_function(key).get_name())
         current_function_label.pack(pady=5)
+        
+        frame = ctk.CTkFrame(popup_window)
+        frame.pack(fill=ctk.BOTH, expand=True, padx = 10, pady = 10)
+        
+        frame.grid_columnconfigure((0, 1), weight=1)
+        frame.grid_rowconfigure((0, 1, 2), weight=1)
 
-        edit_button = ctk.CTkButton(popup_window, text="Edit", command=lambda: self.handle_edit(key, popup_window), width=100)
-        edit_button.pack(pady=5)
+        edit_button = ctk.CTkButton(frame, text="Edit", command=lambda: self.handle_edit(key, popup_window))
+        edit_button.grid(row = 0, column = 0, columnspan=2, sticky="nsew", padx=5, pady=5)
 
-        abbreviation_button = ctk.CTkButton(popup_window, text="Abbreviation", command=lambda: self.create_abbreviation(key, popup_window), width=100)
-        abbreviation_button.pack(pady=5)
+        abbreviation_button = ctk.CTkButton(frame, text="Abbreviation", command=lambda: self.create_abbreviation(key, popup_window))
+        abbreviation_button.grid(row = 1, column = 0, sticky="nsew", padx=5, pady=5)
 
-        prev_button = ctk.CTkButton(popup_window, text="Prev", command=lambda: self.handle_internal_function(key, PREV, popup_window), width=100)
-        prev_button.pack(side=ctk.LEFT, padx=5, pady=5)
+        lock_button = ctk.CTkButton(frame, text="Lock", command=lambda: self.handle_internal_function(key, LOCK, popup_window))
+        lock_button.grid(row = 1, column = 1, sticky="nsew", padx=5, pady=5)
+        
+        prev_button = ctk.CTkButton(frame, text="Prev", command=lambda: self.handle_internal_function(key, PREV, popup_window))
+        prev_button.grid(row = 2, column = 0, sticky="nsew", padx=5, pady=5)
 
-        next_button = ctk.CTkButton(popup_window, text="Next", command=lambda: self.handle_internal_function(key, NEXT, popup_window), width=100)
-        next_button.pack(side=ctk.LEFT, padx=5, pady=5)
-
-        lock_button = ctk.CTkButton(popup_window, text="Lock", command=lambda: self.handle_internal_function(key, LOCK, popup_window), width=100)
-        lock_button.pack(side=ctk.LEFT, padx=5, pady=5)
-
-        cancel_button = ctk.CTkButton(popup_window, text="Cancel", command=popup_window.destroy, width=100)
-        cancel_button.pack(pady=5)
-
-        # Focus the popup window
-        popup_window.after(0, popup_window.lift)
-
+        next_button = ctk.CTkButton(frame, text="Next", command=lambda: self.handle_internal_function(key, NEXT, popup_window))
+        next_button.grid(row=2, column = 1, sticky="nsew", padx=5, pady=5)
 
         return popup_window
 
