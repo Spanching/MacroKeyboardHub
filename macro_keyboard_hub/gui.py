@@ -3,8 +3,9 @@ from PIL import Image
 import keyboard
 from macro_keyboard_configuration_management.configuration_manager import ConfigurationManager, KeyFunction, FunctionType
 from macro_keyboard_configuration_management.constants import ABBREVIATION, BUTTON, INTERNAL_FUNCTION, CONFIG, RESET, ADD, DELETE, PREV, NEXT, CANCEL, EDIT, LOCK
-from macro_keyboard_hub.confirmation_dialog import ConfirmationDialog
-from macro_keyboard_hub.popup import Popup
+from macro_keyboard_hub.popup.abbreviation_dialog import AbbreviationDialog
+from macro_keyboard_hub.popup.confirmation_dialog import ConfirmationDialog
+from macro_keyboard_hub.popup.popup import Popup
 from macro_keyboard_hub.titlebar import TitleBar
 
 class GUI:
@@ -22,6 +23,7 @@ class GUI:
         self.root.geometry("700x500")
         titlebar = TitleBar(self.root, title="Custom MacroKeyboard Hub")
         titlebar.pack(fill="both")
+        self.root.resizable(True, True)
 
         self.create_widgets()
         self.update_buttons()
@@ -189,8 +191,7 @@ class GUI:
         self.update_buttons()
 
     def create_abbreviation(self, key: str, popup_window: ctk.CTkToplevel):
-        name = ctk.CTkInputDialog(text="Add Abbreviation Name", title="Input").get_input()
-        abbreviation = ctk.CTkInputDialog(text="Add Abbreviation", title="Input").get_input()
+        name, abbreviation = AbbreviationDialog(self.root, 300, 300).get_input()
         if name and abbreviation:
             function = KeyFunction(abbreviation, FunctionType.ABBREVIATION, name=name)
             self.configuration_manager.update_key(key, function)

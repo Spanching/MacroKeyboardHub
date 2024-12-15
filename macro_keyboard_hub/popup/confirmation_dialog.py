@@ -1,7 +1,7 @@
 from typing import Union, Tuple, Optional
 import customtkinter as ctk
 
-from macro_keyboard_hub.popup import Popup
+from macro_keyboard_hub.popup.popup import Popup
 from macro_keyboard_hub.titlebar import TitleBar
 
 class ConfirmationDialog(Popup):

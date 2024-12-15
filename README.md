@@ -61,7 +61,7 @@ cd macro_keyboard_hub
 pyinstaller --onefile __main__.py -w -n gui
 
 cd macro_keyboard_listener
-pyinstaller --onefile __main__.py -w -n listener
+pyinstaller --hidden-import dotenv --onefile __main__.py -w -n listener
 ```
 
 The executables can then be found in the dist folders in their respective directories. Copy them into the same directory
